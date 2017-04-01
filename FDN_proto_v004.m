@@ -6,9 +6,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % prototype 004 
-% TDL + 16 Delay + LOWPASS Filter
-% 
-% Basic structure
+% 16 TDL + 16 Delay + LOWPASS Filter
+% structure:
 % x(n)------->[TAPPED DELAY LINE]------>[LATE REVERB]------
 %              |  |   |   |   |                           |
 %              |  |   |   |   |                           |
@@ -19,6 +18,7 @@
 %                     |                                   |
 %                     |                                   |
 %                     -----------------------------------[+]----->y(n)
+%
 % [LATE REVERB] == FDN of 16 delays
 %% pick a sound file
 ls snd/
@@ -60,10 +60,10 @@ title('Impulse');
 soundsc(x,fs);
 %%
 y = zeros(length(x),1);
-b = 0.4*ones(1,16);
+b = 0.29*ones(1,16);
 c = 0.4*ones(1,16);
 % Gain coefficient |g|<1
-g = 0.239999999999999999999;
+g = 0.219999999999999999999;
 %% Puckette Feedback Matrix 
 % ??????????????????????
 %% using Hadamard Matrix
@@ -157,18 +157,31 @@ end
 %% Plot
 dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
-plot(t,y,'k'); hold on;
-plot(t,nX,'g'); xlabel('Seconds'); ylabel('Amplitude');
+figure(1)
+subplot(4,1,1)
+plot(t,x,'k'); 
+subplot(4,1,2)
+plot(t,nX,'g');
+subplot(4,1,3)
+plot(t,y)
+subplot(4,1,4)
+plot(t,nX); hold on;
+plot(t,y);
+xlabel('Seconds'); ylabel('Amplitude');
 title('Feedback Delay Network');
-legend('reverb','original');
+% legend('reverb','original');
 %% Spectrogram
 figure(1) 
-subplot(2,1,1);
+subplot(3,1,1);
 title('original sound file');
 specgram(x);
-subplot(2,1,2);
+subplot(3,1,2);
+specgram(nX);
+subplot(3,1,3)
 title('reverb');
 specgram(y);
-%%
-soundsc(y,fs)
+%% combine early reflections and late reflections
+yy = y + nX;
+%% 
+soundsc(yy,fs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
