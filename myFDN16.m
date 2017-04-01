@@ -2,6 +2,7 @@ classdef myFDN16 < audioPlugin
     properties 
         % LPF Coeff
         B0 = 0.97;
+        
         % Delay Time
         Delay = 0.5;
         
@@ -37,8 +38,8 @@ classdef myFDN16 < audioPlugin
         BufferIndex = 1;
         % Delay times
         % NSamples = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-        % NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
-        NSamples = [256 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        % NSamples = [256 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
@@ -66,11 +67,7 @@ classdef myFDN16 < audioPlugin
     end
     methods
         function out = process(plugin, in)
-            % b and c coff - buffers
-            bN = plugin.B*ones(1,16);
-            cN = plugin.C*ones(1,16);
             
-%             B1 = 1 - plugin.B0;
             
             out = zeros(size(in));
             writeIndex = plugin.BufferIndex;
@@ -142,6 +139,11 @@ classdef myFDN16 < audioPlugin
             end
             
             for i = 1:size(in,1)
+                % b and c coff - buffers
+                bN = plugin.B*ones(1,16);
+                cN = plugin.C*ones(1,16);
+                % LPF coeff
+                B1 = 1 - plugin.B0;
                 % feedback matrix
                 A = plugin.Dampening*(1/2)*hadamard(16);
                 
@@ -167,13 +169,26 @@ classdef myFDN16 < audioPlugin
                 out(i,:) = y;
                 
                 % LOWPASS Filter
-%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-%                 
-%                 plugin.yLast = y(1);
+                temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
+                temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
+                temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
+                temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
+                temp(5) = B1*temp(5) + plugin.B0*plugin.yLast;
+                temp(6) = B1*temp(6) + plugin.B0*plugin.yLast;
+                temp(7) = B1*temp(7) + plugin.B0*plugin.yLast;
+                temp(8) = B1*temp(8) + plugin.B0*plugin.yLast;
+                temp(9) = B1*temp(9) + plugin.B0*plugin.yLast;
+                temp(10) = B1*temp(10) + plugin.B0*plugin.yLast;
+                temp(11) = B1*temp(11) + plugin.B0*plugin.yLast;
+                temp(12) = B1*temp(12) + plugin.B0*plugin.yLast;
+                temp(13) = B1*temp(13) + plugin.B0*plugin.yLast;
+                temp(14) = B1*temp(14) + plugin.B0*plugin.yLast;
+                temp(15) = B1*temp(15) + plugin.B0*plugin.yLast;
+                temp(16) = B1*temp(16) + plugin.B0*plugin.yLast;
                 
+                plugin.yLast = sum(y)/2;
+                
+                % buffers
                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';

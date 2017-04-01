@@ -11,7 +11,7 @@
 ls snd/
 %% load a sound file
 clear all; close all; clc;
-[x, fs] = audioread('snd/GtrE035_MN.wav');
+[x, fs] = audioread('snd/singing.wav');
 segm = zeros(fs,1);
 x = [segm; x; segm; segm];
 dt = 1/fs;
@@ -75,7 +75,7 @@ z6 = zeros(1,max(m));
 z7 = zeros(1,max(m));
 z8 = zeros(1,max(m));
 %% Loop
-b0 = 0.3;
+b0 = 0.98;
 b1 = 1 - b0;
 for n = length(segm):length(y)
     temp = [z1(m(1)) z2(m(2)) z3(m(3)) z4(m(4)) z5(m(5)) z6(m(6)) z7(m(7)) z8(m(8))];
