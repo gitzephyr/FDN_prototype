@@ -1,3 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Author            : Matteo Girardi
+% Created on        : Fri Mar 19 14:30:18 CET 2017
+% Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
+% Last Modified on  : 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
+% Real-time implementation of FDN
+% you need the Audio System Toolbox!! 
+% 
+% 4 Delay + LOWPASS Filter
+% based on: 
+% - Physical Audio Signal Processing
+%   for Virtual Musical Instruments and Audio Effects
+%   Julius O. Smith III
+% p. 65-67, p.85-127
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef myFDN < audioPlugin
     properties 
         % LPF Coeff

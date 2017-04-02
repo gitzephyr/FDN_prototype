@@ -7,6 +7,12 @@
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % FDN_proto_v002.m
 % 16 Delay + LOWPASS Filter
+% based on: 
+% - Physical Audio Signal Processing
+%   for Virtual Musical Instruments and Audio Effects
+%   Julius O. Smith III
+% p. 65-67, p.85-127
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
 %% load a sound file
@@ -60,7 +66,7 @@ A = g*(1/2)*hadamard(16);
 % m = [89 97 107 113 149 211 263 293 401 421 433 443 577 601 641 661]';
 % m = [193 373 421 499 569 617 677 751 823 907 929 947 971 991 1019 1039]';
 % m = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-m = DelayLineLengths(16)
+m = DelayLineLengths(16,fs,0.09);
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));

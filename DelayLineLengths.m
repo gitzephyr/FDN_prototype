@@ -3,18 +3,34 @@
 % Created on        : Mon Mar 30 17:33:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
 % Last Modified on  : 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~ -*- Prime Power Delay-Line Lengths -*- ~~~~~~~~~~~~~~~~ %%
-% 
-%%
+% DESCRIPTION
+%   it is convenient to choose each delay-line length M_i, as an integer
+%   power of a distinct prime number p_i. With this choice, the
+%   delay-line lengths are always coprime.
+%
+%   Physical Audio Signal Processing
+%   for Virtual Musical Instruments and Audio Effects
+%   Julius O. Smith III
+%   p. 113
+%   
+% INPUT
+%   - N     : numbers of delay lines
+%   - fs    : sampling frequency
+%   - t     : first delay in ms
+%
+% OUTPUT
+%   - m     : desired delay time in samples
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function m = DelayLineLengths(N,fs,t)
 p = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53];
 % p = [59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
 M = zeros(1,N);
 M(1) = fs*t;
 for i = 2:N
-    r = randi(50)*0.001;
-    M(i) = fs*t + r;
+    r = randi(1000)*0.001;
+    M(i) = M(i-1) + r;
 end
 % M = [fs*0.005 fs*0.009 fs*0.015 fs*0.020...
 %      fs*0.028 fs*0.034 fs*0.040 fs*0.055 ...

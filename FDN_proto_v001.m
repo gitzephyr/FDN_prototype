@@ -7,6 +7,12 @@
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % prototype 001 
 % 4 Delay + LOWPASS Filter
+% based on: 
+% - Physical Audio Signal Processing
+%   for Virtual Musical Instruments and Audio Effects
+%   Julius O. Smith III
+% p. 65-67, p.85-127
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
 %%
@@ -46,7 +52,7 @@ A = g*(1/2)*hadamard(4);
 % tmp
 % m = [89 443 1423 4409]';
 % m = [1024 2187 3125 16807]';
-m = DelayLineLengths(4);
+m = DelayLineLengths(4,fs,0.03);
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));

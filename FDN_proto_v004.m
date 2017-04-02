@@ -7,6 +7,12 @@
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % prototype 004 
 % 16 TDL + 16 Delay + LOWPASS Filter
+% based on: 
+% - Physical Audio Signal Processing
+%   for Virtual Musical Instruments and Audio Effects
+%   Julius O. Smith III
+% p. 65-67, p.85-127
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % structure:
 % x(n)------->[TAPPED DELAY LINE]------>[LATE REVERB]------
 %              |  |   |   |   |                           |
@@ -20,6 +26,7 @@
 %                     -----------------------------------[+]----->y(n)
 %
 % [LATE REVERB] == FDN of 16 delays
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
 %% load a sound file
