@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Mar 20 09:57:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Mon Apr  3 21:15:24 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % FDN_proto_v002.m
@@ -66,7 +66,7 @@ A = g*(1/2)*hadamard(16);
 % m = [89 97 107 113 149 211 263 293 401 421 433 443 577 601 641 661]';
 % m = [193 373 421 499 569 617 677 751 823 907 929 947 971 991 1019 1039]';
 % m = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-m = DelayLineLengths(16,fs,0.09);
+m = DelayLineLengths(16,fs,0.001);
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));
@@ -87,6 +87,7 @@ z16 = zeros(1,max(m));
 %% Loop
 b0 = 0.3;
 b1 = 1 - b0;
+lastA = zeros(1,16);
 for n = length(segm):length(y)
     temp = [z1(m(1)) z2(m(2)) z3(m(3)) z4(m(4)) z5(m(5)) z6(m(6)) z7(m(7)) z8(m(8))...
             z9(m(9)) z10(m(10)) z11(m(11)) z12(m(12)) z13(m(13)) z14(m(14)) z15(m(15)) z16(m(16))];
@@ -98,39 +99,75 @@ for n = length(segm):length(y)
         + c(15)*z15(m(15)) + c(16)*z16(m(16));
     
     % Lowpass filters
-    temp(1) = b1*temp(1) + b0*y(n-1);
-    temp(2) = b1*temp(2) + b0*y(n-1);
-    temp(3) = b1*temp(3) + b0*y(n-1);
-    temp(4) = b1*temp(4) + b0*y(n-1);
-    temp(5) = b1*temp(5) + b0*y(n-1);
-    temp(6) = b1*temp(6) + b0*y(n-1);
-    temp(7) = b1*temp(7) + b0*y(n-1);
-    temp(8) = b1*temp(8) + b0*y(n-1);
-    temp(9) = b1*temp(9) + b0*y(n-1);
-    temp(10) = b1*temp(10) + b0*y(n-1);
-    temp(11) = b1*temp(11) + b0*y(n-1);
-    temp(12) = b1*temp(12) + b0*y(n-1);
-    temp(13) = b1*temp(13) + b0*y(n-1);
-    temp(14) = b1*temp(14) + b0*y(n-1);
-    temp(15) = b1*temp(15) + b0*y(n-1);
-    temp(16) = b1*temp(16) + b0*y(n-1);
+%     temp(1) = b1*temp(1) + b0*y(n-1);
+%     temp(2) = b1*temp(2) + b0*y(n-1);
+%     temp(3) = b1*temp(3) + b0*y(n-1);
+%     temp(4) = b1*temp(4) + b0*y(n-1);
+%     temp(5) = b1*temp(5) + b0*y(n-1);
+%     temp(6) = b1*temp(6) + b0*y(n-1);
+%     temp(7) = b1*temp(7) + b0*y(n-1);
+%     temp(8) = b1*temp(8) + b0*y(n-1);
+%     temp(9) = b1*temp(9) + b0*y(n-1);
+%     temp(10) = b1*temp(10) + b0*y(n-1);
+%     temp(11) = b1*temp(11) + b0*y(n-1);
+%     temp(12) = b1*temp(12) + b0*y(n-1);
+%     temp(13) = b1*temp(13) + b0*y(n-1);
+%     temp(14) = b1*temp(14) + b0*y(n-1);
+%     temp(15) = b1*temp(15) + b0*y(n-1);
+%     temp(16) = b1*temp(16) + b0*y(n-1);
+%     
+%     z1 = [(x(n)*b(1) + temp*A(1,:)') z1(1:length(z1)-1)];
+%     z2 = [(x(n)*b(2) + temp*A(2,:)') z2(1:length(z2)-1)]; 
+%     z3 = [(x(n)*b(3) + temp*A(3,:)') z3(1:length(z3)-1)]; 
+%     z4 = [(x(n)*b(4) + temp*A(4,:)') z4(1:length(z4)-1)];
+%     z5 = [(x(n)*b(5) + temp*A(5,:)') z5(1:length(z5)-1)];
+%     z6 = [(x(n)*b(6) + temp*A(6,:)') z6(1:length(z6)-1)]; 
+%     z7 = [(x(n)*b(7) + temp*A(7,:)') z7(1:length(z7)-1)]; 
+%     z8 = [(x(n)*b(8) + temp*A(8,:)') z8(1:length(z8)-1)];
+%     z9 = [(x(n)*b(9) + temp*A(9,:)') z9(1:length(z9)-1)];
+%     z10 = [(x(n)*b(10) + temp*A(10,:)') z10(1:length(z10)-1)]; 
+%     z11 = [(x(n)*b(11) + temp*A(11,:)') z11(1:length(z11)-1)]; 
+%     z12 = [(x(n)*b(12) + temp*A(12,:)') z12(1:length(z12)-1)];
+%     z13 = [(x(n)*b(13) + temp*A(13,:)') z13(1:length(z13)-1)];
+%     z14 = [(x(n)*b(14) + temp*A(14,:)') z14(1:length(z14)-1)]; 
+%     z15 = [(x(n)*b(15) + temp*A(15,:)') z15(1:length(z15)-1)]; 
+%     z16 = [(x(n)*b(16) + temp*A(16,:)') z16(1:length(z16)-1)];
+
+    % Lowpass filter 
+    lastA(1) = b1*(temp*A(1,:)') + b0*lastA(1);
+    lastA(2) = b1*(temp*A(2,:)') + b0*lastA(2);
+    lastA(3) = b1*(temp*A(3,:)') + b0*lastA(3);
+    lastA(4) = b1*(temp*A(4,:)') + b0*lastA(4);
+    lastA(5) = b1*(temp*A(5,:)') + b0*lastA(5);
+    lastA(6) = b1*(temp*A(6,:)') + b0*lastA(6);
+    lastA(7) = b1*(temp*A(7,:)') + b0*lastA(7);
+    lastA(8) = b1*(temp*A(8,:)') + b0*lastA(8);
+    lastA(9) = b1*(temp*A(9,:)') + b0*lastA(9);
+    lastA(10) = b1*(temp*A(10,:)') + b0*lastA(10);
+    lastA(11) = b1*(temp*A(11,:)') + b0*lastA(11);
+    lastA(12) = b1*(temp*A(12,:)') + b0*lastA(12);
+    lastA(13) = b1*(temp*A(13,:)') + b0*lastA(13);
+    lastA(14) = b1*(temp*A(14,:)') + b0*lastA(14);
+    lastA(15) = b1*(temp*A(15,:)') + b0*lastA(15);
+    lastA(16) = b1*(temp*A(16,:)') + b0*lastA(16);
     
-    z1 = [(x(n)*b(1) + temp*A(1,:)') z1(1:length(z1)-1)];
-    z2 = [(x(n)*b(2) + temp*A(2,:)') z2(1:length(z2)-1)]; 
-    z3 = [(x(n)*b(3) + temp*A(3,:)') z3(1:length(z3)-1)]; 
-    z4 = [(x(n)*b(4) + temp*A(4,:)') z4(1:length(z4)-1)];
-    z5 = [(x(n)*b(5) + temp*A(5,:)') z5(1:length(z5)-1)];
-    z6 = [(x(n)*b(6) + temp*A(6,:)') z6(1:length(z6)-1)]; 
-    z7 = [(x(n)*b(7) + temp*A(7,:)') z7(1:length(z7)-1)]; 
-    z8 = [(x(n)*b(8) + temp*A(8,:)') z8(1:length(z8)-1)];
-    z9 = [(x(n)*b(9) + temp*A(9,:)') z9(1:length(z9)-1)];
-    z10 = [(x(n)*b(10) + temp*A(10,:)') z10(1:length(z10)-1)]; 
-    z11 = [(x(n)*b(11) + temp*A(11,:)') z11(1:length(z11)-1)]; 
-    z12 = [(x(n)*b(12) + temp*A(12,:)') z12(1:length(z12)-1)];
-    z13 = [(x(n)*b(13) + temp*A(13,:)') z13(1:length(z13)-1)];
-    z14 = [(x(n)*b(14) + temp*A(14,:)') z14(1:length(z14)-1)]; 
-    z15 = [(x(n)*b(15) + temp*A(15,:)') z15(1:length(z15)-1)]; 
-    z16 = [(x(n)*b(16) + temp*A(16,:)') z16(1:length(z16)-1)];
+    
+    z1 = [(x(n)*b(1) + lastA(1)) z1(1:length(z1)-1)];
+    z2 = [(x(n)*b(2) + lastA(2)) z2(1:length(z2)-1)]; 
+    z3 = [(x(n)*b(3) + lastA(3)) z3(1:length(z3)-1)]; 
+    z4 = [(x(n)*b(4) + lastA(4)) z4(1:length(z4)-1)];
+    z5 = [(x(n)*b(5) + lastA(5)) z5(1:length(z5)-1)];
+    z6 = [(x(n)*b(6) + lastA(6)) z6(1:length(z6)-1)]; 
+    z7 = [(x(n)*b(7) + lastA(7)) z7(1:length(z7)-1)]; 
+    z8 = [(x(n)*b(8) + lastA(8)) z8(1:length(z8)-1)];
+    z9 = [(x(n)*b(9) + lastA(9)) z9(1:length(z9)-1)];
+    z10 = [(x(n)*b(10) + lastA(10)) z10(1:length(z10)-1)]; 
+    z11 = [(x(n)*b(11) + lastA(11)) z11(1:length(z11)-1)]; 
+    z12 = [(x(n)*b(12) + lastA(12)) z12(1:length(z12)-1)];
+    z13 = [(x(n)*b(13) + lastA(13)) z13(1:length(z13)-1)];
+    z14 = [(x(n)*b(14) + lastA(14)) z14(1:length(z14)-1)]; 
+    z15 = [(x(n)*b(15) + lastA(15)) z15(1:length(z15)-1)]; 
+    z16 = [(x(n)*b(16) + lastA(16)) z16(1:length(z16)-1)];
 end
 %% Plot
 dt = 1/fs; 
