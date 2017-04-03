@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Mon Apr  3 21:17:25 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
@@ -20,7 +20,7 @@ classdef myFDN < audioPlugin
         % LPF Coeff
         B0 = 0.97;
         % Delay Time
-        Delay = 0.5;
+        Delay = 1;
         % Coeff before and after del_buffer
         B = 0.3;
         C = 0.6;
@@ -40,7 +40,7 @@ classdef myFDN < audioPlugin
         % 
         BufferIndex = 1;
         % Delay times
-        NSamples = [32 243 625 343]';
+        NSamples = [32 81 125 343];
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...  %<---
@@ -55,16 +55,14 @@ classdef myFDN < audioPlugin
             'Mapping',{'lin',0,1}),...
             audioPluginParameter('C',...
             'DisplayName','C Coeff',...
-            'Mapping',{'lin',0,1}));
-%         PluginInterface = audioPluginInterface(...
-%             audioPluginParameter('Delay',...
-%             'DisplayName','Delay',...
-%             'Label','seconds',...
-%             'Mapping',{'lin',0,5}))
+            'Mapping',{'lin',0,1}),...
+            audioPluginParameter('Delay',...
+            'DisplayName','Delay',...
+            'Label','seconds',...
+            'Mapping',{'int',1,13}));
 %             audioPluginParameter('B0',...
 %             'DisplayName','LPF Coeff',...
 %             'Mapping',{'lin',0,1})
-
     end
     methods
         function out = process(plugin, in)
@@ -117,7 +115,7 @@ classdef myFDN < audioPlugin
 %                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
 %                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
 %                 
-%                 plugin.yLast = y(1);
+%                 plugin.yLast = sum(y)/2;
                 
                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
@@ -150,9 +148,21 @@ classdef myFDN < audioPlugin
             end
             plugin.BufferIndex = writeIndex;
         end
-%         function set.Delay(plugin, val)
-%             plugin.Delay = val;
-%             plugin.NSamples = floor(getSampleRate(plugin)*val);
-%         end
+        
+        function set.Delay(plugin, val)
+            plugin.Delay = val;
+            p = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53];
+            fs = getSampleRate(plugin);
+            M = [fs*0.005 fs*0.009 fs*0.015 fs*0.020 ...
+                 fs*0.028 fs*0.034 fs*0.040 fs*0.055 ...
+                 fs*0.06 fs*0.065 fs*0.070 fs*0.077 ...
+                 fs*0.08 fs*0.087 fs*0.099 fs*0.12];
+            M = round(M);
+            d = log(M(val:val+3));
+            n = log(p(val:val+3));
+            x = d./n;
+            nx = round(x);
+            plugin.NSamples = p(val:val+3).^nx;
+        end
     end
 end
