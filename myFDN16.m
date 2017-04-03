@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Mon Apr  3 21:17:30 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
@@ -55,8 +55,12 @@ classdef myFDN16 < audioPlugin
         BufferIndex = 1;
         % Delay times
         % NSamples = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-        NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        % NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
         % NSamples = [256 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        NSamples = [256 729 3125 2401 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        
+        lastA = zeros(1,16);
+        
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
@@ -186,45 +190,82 @@ classdef myFDN16 < audioPlugin
                 out(i,:) = y;
                 
                 % LOWPASS Filter
-                temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-                temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-                temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-                temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-                temp(5) = B1*temp(5) + plugin.B0*plugin.yLast;
-                temp(6) = B1*temp(6) + plugin.B0*plugin.yLast;
-                temp(7) = B1*temp(7) + plugin.B0*plugin.yLast;
-                temp(8) = B1*temp(8) + plugin.B0*plugin.yLast;
-                temp(9) = B1*temp(9) + plugin.B0*plugin.yLast;
-                temp(10) = B1*temp(10) + plugin.B0*plugin.yLast;
-                temp(11) = B1*temp(11) + plugin.B0*plugin.yLast;
-                temp(12) = B1*temp(12) + plugin.B0*plugin.yLast;
-                temp(13) = B1*temp(13) + plugin.B0*plugin.yLast;
-                temp(14) = B1*temp(14) + plugin.B0*plugin.yLast;
-                temp(15) = B1*temp(15) + plugin.B0*plugin.yLast;
-                temp(16) = B1*temp(16) + plugin.B0*plugin.yLast;
+                plugin.lastA(1) = B1*(temp*A(1,:)') + plugin.B0*plugin.lastA(1);
+                plugin.lastA(2) = B1*(temp*A(2,:)') + plugin.B0*plugin.lastA(2);
+                plugin.lastA(3) = B1*(temp*A(3,:)') + plugin.B0*plugin.lastA(3);
+                plugin.lastA(4) = B1*(temp*A(4,:)') + plugin.B0*plugin.lastA(4);
+                plugin.lastA(5) = B1*(temp*A(5,:)') + plugin.B0*plugin.lastA(5);
+                plugin.lastA(6) = B1*(temp*A(6,:)') + plugin.B0*plugin.lastA(6);
+                plugin.lastA(7) = B1*(temp*A(7,:)') + plugin.B0*plugin.lastA(7);
+                plugin.lastA(8) = B1*(temp*A(8,:)') + plugin.B0*plugin.lastA(8);
+                plugin.lastA(9) = B1*(temp*A(9,:)') + plugin.B0*plugin.lastA(9);
+                plugin.lastA(10) = B1*(temp*A(10,:)') + plugin.B0*plugin.lastA(10);
+                plugin.lastA(11) = B1*(temp*A(11,:)') + plugin.B0*plugin.lastA(11);
+                plugin.lastA(12) = B1*(temp*A(12,:)') + plugin.B0*plugin.lastA(12);
+                plugin.lastA(13) = B1*(temp*A(13,:)') + plugin.B0*plugin.lastA(13);
+                plugin.lastA(14) = B1*(temp*A(14,:)') + plugin.B0*plugin.lastA(14);
+                plugin.lastA(15) = B1*(temp*A(15,:)') + plugin.B0*plugin.lastA(15);
+                plugin.lastA(16) = B1*(temp*A(16,:)') + plugin.B0*plugin.lastA(16);
                 
-                plugin.yLast = sum(y)/2;
+%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
+%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
+%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
+%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
+%                 temp(5) = B1*temp(5) + plugin.B0*plugin.yLast;
+%                 temp(6) = B1*temp(6) + plugin.B0*plugin.yLast;
+%                 temp(7) = B1*temp(7) + plugin.B0*plugin.yLast;
+%                 temp(8) = B1*temp(8) + plugin.B0*plugin.yLast;
+%                 temp(9) = B1*temp(9) + plugin.B0*plugin.yLast;
+%                 temp(10) = B1*temp(10) + plugin.B0*plugin.yLast;
+%                 temp(11) = B1*temp(11) + plugin.B0*plugin.yLast;
+%                 temp(12) = B1*temp(12) + plugin.B0*plugin.yLast;
+%                 temp(13) = B1*temp(13) + plugin.B0*plugin.yLast;
+%                 temp(14) = B1*temp(14) + plugin.B0*plugin.yLast;
+%                 temp(15) = B1*temp(15) + plugin.B0*plugin.yLast;
+%                 temp(16) = B1*temp(16) + plugin.B0*plugin.yLast;
+                
+%                 plugin.yLast = sum(y)/2;
                 
                 % buffers
-                plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
-                plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
-                plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';
-                plugin.z4(writeIndex,:) = in(i,:)*bN(4) + temp*A(4,:)';
+%                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
+%                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
+%                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';
+%                 plugin.z4(writeIndex,:) = in(i,:)*bN(4) + temp*A(4,:)';
+%                 
+%                 plugin.z5(writeIndex,:) = in(i,:)*bN(5) + temp*A(5,:)';
+%                 plugin.z6(writeIndex,:) = in(i,:)*bN(6) + temp*A(6,:)';
+%                 plugin.z7(writeIndex,:) = in(i,:)*bN(7) + temp*A(7,:)';
+%                 plugin.z8(writeIndex,:) = in(i,:)*bN(8) + temp*A(8,:)';
+%                 
+%                 plugin.z9(writeIndex,:) = in(i,:)*bN(9) + temp*A(9,:)';
+%                 plugin.z10(writeIndex,:) = in(i,:)*bN(10) + temp*A(10,:)';
+%                 plugin.z11(writeIndex,:) = in(i,:)*bN(11) + temp*A(11,:)';
+%                 plugin.z12(writeIndex,:) = in(i,:)*bN(12) + temp*A(12,:)';
+%                 
+%                 plugin.z13(writeIndex,:) = in(i,:)*bN(13) + temp*A(13,:)';
+%                 plugin.z14(writeIndex,:) = in(i,:)*bN(14) + temp*A(14,:)';
+%                 plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
+%                 plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
+
+                plugin.z1(writeIndex,:) = in(i,:)*bN(1) + plugin.lastA(1);
+                plugin.z2(writeIndex,:) = in(i,:)*bN(2) + plugin.lastA(2);
+                plugin.z3(writeIndex,:) = in(i,:)*bN(3) + plugin.lastA(3);
+                plugin.z4(writeIndex,:) = in(i,:)*bN(4) + plugin.lastA(4);
                 
-                plugin.z5(writeIndex,:) = in(i,:)*bN(5) + temp*A(5,:)';
-                plugin.z6(writeIndex,:) = in(i,:)*bN(6) + temp*A(6,:)';
-                plugin.z7(writeIndex,:) = in(i,:)*bN(7) + temp*A(7,:)';
-                plugin.z8(writeIndex,:) = in(i,:)*bN(8) + temp*A(8,:)';
+                plugin.z5(writeIndex,:) = in(i,:)*bN(5) + plugin.lastA(5);
+                plugin.z6(writeIndex,:) = in(i,:)*bN(6) + plugin.lastA(6);
+                plugin.z7(writeIndex,:) = in(i,:)*bN(7) + plugin.lastA(7);
+                plugin.z8(writeIndex,:) = in(i,:)*bN(8) + plugin.lastA(8);
                 
-                plugin.z9(writeIndex,:) = in(i,:)*bN(9) + temp*A(9,:)';
-                plugin.z10(writeIndex,:) = in(i,:)*bN(10) + temp*A(10,:)';
-                plugin.z11(writeIndex,:) = in(i,:)*bN(11) + temp*A(11,:)';
-                plugin.z12(writeIndex,:) = in(i,:)*bN(12) + temp*A(12,:)';
+                plugin.z9(writeIndex,:) = in(i,:)*bN(9) + plugin.lastA(9);
+                plugin.z10(writeIndex,:) = in(i,:)*bN(10) + plugin.lastA(10);
+                plugin.z11(writeIndex,:) = in(i,:)*bN(11) + plugin.lastA(11);
+                plugin.z12(writeIndex,:) = in(i,:)*bN(12) + plugin.lastA(12);
                 
-                plugin.z13(writeIndex,:) = in(i,:)*bN(13) + temp*A(13,:)';
-                plugin.z14(writeIndex,:) = in(i,:)*bN(14) + temp*A(14,:)';
-                plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
-                plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
+                plugin.z13(writeIndex,:) = in(i,:)*bN(13) + plugin.lastA(13);
+                plugin.z14(writeIndex,:) = in(i,:)*bN(14) + plugin.lastA(14);
+                plugin.z15(writeIndex,:) = in(i,:)*bN(15) + plugin.lastA(15)';
+                plugin.z16(writeIndex,:) = in(i,:)*bN(16) + plugin.lastA(16);
                 
                 writeIndex = writeIndex + 1;
                 
@@ -271,7 +312,7 @@ classdef myFDN16 < audioPlugin
                 if Z6_readIndex > 44100
                     Z6_readIndex = 1;
                 end
-                if Z7_readIndex > 220500
+                if Z7_readIndex > 44100
                     Z7_readIndex = 1;
                 end
                 if Z8_readIndex > 44100
