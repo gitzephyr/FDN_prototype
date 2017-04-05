@@ -21,7 +21,7 @@ classdef myFDN16 < audioPlugin
         B0 = 0.97;
         
         % Delay Time
-        Delay = 0.5;
+        Delay = 1;
         
         % Coeff before and after del_buffer
         B = 0.1;
@@ -32,32 +32,35 @@ classdef myFDN16 < audioPlugin
         Gain = 0.1;
         % LPF
         yLast = 0;
+        
+        pathmin = 3;
     end
     properties (Access = private)
         % Delay Lines
-        z1 = zeros(44100,2);
-        z2 = zeros(44100,2);
-        z3 = zeros(44100,2);
-        z4 = zeros(44100,2);
-        z5 = zeros(44100,2);
-        z6 = zeros(44100,2);
-        z7 = zeros(44100,2);
-        z8 = zeros(44100,2);
-        z9 = zeros(44100,2);
-        z10 = zeros(44100,2);
-        z11 = zeros(44100,2);
-        z12 = zeros(44100,2);
-        z13 = zeros(44100,2);
-        z14 = zeros(44100,2);
-        z15 = zeros(44100,2);
-        z16 = zeros(44100,2);
+        z1 = zeros(192001,2);
+        z2 = zeros(192001,2);
+        z3 = zeros(192001,2);
+        z4 = zeros(192001,2);
+        z5 = zeros(192001,2);
+        z6 = zeros(192001,2);
+        z7 = zeros(192001,2);
+        z8 = zeros(192001,2);
+        z9 = zeros(192001,2);
+        z10 = zeros(192001,2);
+        z11 = zeros(192001,2);
+        z12 = zeros(192001,2);
+        z13 = zeros(192001,2);
+        z14 = zeros(192001,2);
+        z15 = zeros(192001,2);
+        z16 = zeros(192001,2);
         % 
         BufferIndex = 1;
         % Delay times
         % NSamples = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
         % NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
         % NSamples = [256 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
-        NSamples = [256 729 3125 2401 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        % NSamples = [256 729 3125 2401 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
+        NSamples = zeros(1,16);
         
         lastA = zeros(1,16);
         
@@ -78,7 +81,11 @@ classdef myFDN16 < audioPlugin
             'Mapping',{'lin',0,1}),...
             audioPluginParameter('B0',...
             'DisplayName','LPF Coeff',...
-            'Mapping',{'lin',0,1}));
+            'Mapping',{'lin',0,1}),...
+            audioPluginParameter('pathmin',...
+            'DisplayName','RoomSizeMin',...
+            'Label','meters',...
+            'Mapping',{'int',1,50}));
 %         PluginInterface = audioPluginInterface(...
 %             audioPluginParameter('Delay',...
 %             'DisplayName','Delay',...
@@ -111,52 +118,52 @@ classdef myFDN16 < audioPlugin
             Z16_readIndex = writeIndex - plugin.NSamples(16);
             
             if Z1_readIndex <= 0
-                Z1_readIndex = Z1_readIndex + 44100;
+                Z1_readIndex = Z1_readIndex + 192001;
             end
             if Z2_readIndex <= 0
-                Z2_readIndex = Z2_readIndex + 44100;
+                Z2_readIndex = Z2_readIndex + 192001;
             end
             if Z3_readIndex <= 0
-                Z3_readIndex = Z3_readIndex + 44100;
+                Z3_readIndex = Z3_readIndex + 192001;
             end
             if Z4_readIndex <= 0
-                Z4_readIndex = Z4_readIndex + 44100;
+                Z4_readIndex = Z4_readIndex + 192001;
             end
             if Z5_readIndex <= 0
-                Z5_readIndex = Z5_readIndex + 44100;
+                Z5_readIndex = Z5_readIndex + 192001;
             end
             if Z6_readIndex <= 0
-                Z6_readIndex = Z6_readIndex + 44100;
+                Z6_readIndex = Z6_readIndex + 192001;
             end
             if Z7_readIndex <= 0
-                Z7_readIndex = Z7_readIndex + 44100;
+                Z7_readIndex = Z7_readIndex + 192001;
             end
             if Z8_readIndex <= 0
-                Z8_readIndex = Z8_readIndex + 44100;
+                Z8_readIndex = Z8_readIndex + 192001;
             end
             if Z9_readIndex <= 0
-                Z9_readIndex = Z9_readIndex + 44100;
+                Z9_readIndex = Z9_readIndex + 192001;
             end
             if Z10_readIndex <= 0
-                Z10_readIndex = Z10_readIndex + 44100;
+                Z10_readIndex = Z10_readIndex + 192001;
             end
             if Z11_readIndex <= 0
-                Z11_readIndex = Z11_readIndex + 44100;
+                Z11_readIndex = Z11_readIndex + 192001;
             end
             if Z12_readIndex <= 0
-                Z12_readIndex = Z12_readIndex + 44100;
+                Z12_readIndex = Z12_readIndex + 192001;
             end
             if Z13_readIndex <= 0
-                Z13_readIndex = Z13_readIndex + 44100;
+                Z13_readIndex = Z13_readIndex + 192001;
             end
             if Z14_readIndex <= 0
-                Z14_readIndex = Z14_readIndex + 44100;
+                Z14_readIndex = Z14_readIndex + 192001;
             end
             if Z15_readIndex <= 0
-                Z15_readIndex = Z15_readIndex + 44100;
+                Z15_readIndex = Z15_readIndex + 192001;
             end
             if Z16_readIndex <= 0
-                Z16_readIndex = Z16_readIndex + 44100;
+                Z16_readIndex = Z16_readIndex + 192001;
             end
             
             for i = 1:size(in,1)
@@ -269,7 +276,7 @@ classdef myFDN16 < audioPlugin
                 
                 writeIndex = writeIndex + 1;
                 
-                if writeIndex > 44100
+                if writeIndex > 192001
                     writeIndex = 1;
                 end
                 
@@ -293,63 +300,82 @@ classdef myFDN16 < audioPlugin
                 Z15_readIndex = Z15_readIndex + 1;
                 Z16_readIndex = Z16_readIndex + 1;
                 
-                if Z1_readIndex > 44100
+                if Z1_readIndex > 192001
                     Z1_readIndex = 1;
                 end
-                if Z2_readIndex > 44100
+                if Z2_readIndex > 192001
                     Z2_readIndex = 1;
                 end
-                if Z3_readIndex > 44100
+                if Z3_readIndex > 192001
                     Z3_readIndex = 1;
                 end
-                if Z4_readIndex > 44100
+                if Z4_readIndex > 192001
                     Z4_readIndex = 1;
                 end
                 
-                if Z5_readIndex > 44100
+                if Z5_readIndex > 192001
                     Z5_readIndex = 1;
                 end
-                if Z6_readIndex > 44100
+                if Z6_readIndex > 192001
                     Z6_readIndex = 1;
                 end
-                if Z7_readIndex > 44100
+                if Z7_readIndex > 192001
                     Z7_readIndex = 1;
                 end
-                if Z8_readIndex > 44100
+                if Z8_readIndex > 192001
                     Z8_readIndex = 1;
                 end
                 
-                if Z9_readIndex > 44100
+                if Z9_readIndex > 192001
                     Z9_readIndex = 1;
                 end
-                if Z10_readIndex > 44100
+                if Z10_readIndex > 192001
                     Z10_readIndex = 1;
                 end
-                if Z11_readIndex > 44100
+                if Z11_readIndex > 192001
                     Z11_readIndex = 1;
                 end
-                if Z12_readIndex > 44100
+                if Z12_readIndex > 192001
                     Z12_readIndex = 1;
                 end
-                if Z13_readIndex > 44100
+                if Z13_readIndex > 192001
                     Z13_readIndex = 1;
                 end
-                if Z14_readIndex > 44100
+                if Z14_readIndex > 192001
                     Z14_readIndex = 1;
                 end
-                if Z15_readIndex > 44100
+                if Z15_readIndex > 192001
                     Z15_readIndex = 1;
                 end
-                if Z16_readIndex > 44100
+                if Z16_readIndex > 192001
                     Z16_readIndex = 1;
                 end
                 
             end
             plugin.BufferIndex = writeIndex;
         end
-%         function set.Delay(plugin, val)
-%             plugin.Delay = val;
-%             plugin.NSamples = floor(getSampleRate(plugin)*val);
-%         end
+        
+        function set.Delay(plugin, val)
+            plugin.Delay = val;
+            fs = getSampleRate(plugin);
+            pathmax = 63;
+            
+            Np = 16;
+            i = [1:Np];
+            prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+
+            % Prime Power Bounds [matlab: floor(log(maxdel)./log(primes(53)))]
+            % maxdel=8192; % more than 63 meters at 44100 samples/sec & 343 m/s
+            % ppbs = [13,8,5,4,3,3,3,3,2,2,2,2,2,2,2,2]; % 8192 is enough for all
+            % ppb(i) = take(i+1,ppbs);
+
+            % Approximate desired delay-line lengths using powers of distinct primes:
+            c = 343; % soundspeed in m/s at 20 degrees C for dry air
+            dmin = fs*plugin.pathmin/c;
+            dmax = fs*pathmax/c;
+            dl = dmin * (dmax/dmin).^(i/(Np-1)); % desired delay in samples
+            ppwr = floor(log(dl)./log(prime(1:Np))); % best prime power
+            plugin.NSamples = prime(1:Np).^ppwr; % each delay a power of a distinct prime
+        end
     end
 end
