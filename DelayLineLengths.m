@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Mar 30 17:33:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Wed Apr  5 20:13:37 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~ -*- Prime Power Delay-Line Lengths -*- ~~~~~~~~~~~~~~~~ %%
 % DESCRIPTION
@@ -24,8 +24,7 @@
 %   - m     : desired delay time in samples
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function m = DelayLineLengths(N,fs,t)
-p = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53];
-% p = [59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+p = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
 M = zeros(1,N);
 M(1) = fs*t;
 for i = 2:N
