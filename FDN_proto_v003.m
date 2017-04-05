@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Mar 20 09:57:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : Mon Apr  3 21:15:24 CEST 2017
+% Last Modified on  : Wed Apr  5 19:11:36 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % FDN_proto_v002.m
@@ -15,6 +15,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% load a sound file
 clear all; close all; clc;
 [x, fs] = audioread('snd/singing.wav');
@@ -24,6 +25,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Opera voice');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or create an impulse
 clear all; close all; clc;
 fs = 44100;
@@ -34,6 +36,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or impulse of white noise
 clear all; close all; clc;
 fs = 44100;
@@ -49,24 +52,31 @@ segm = zeros(fs,1);
 x = [segm; x; segm; segm; segm];
 plot(x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% play it!
 soundsc(x,fs);
 % audiowrite('Impulse_WN.wav',x,fs);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 y = zeros(1,length(x));
 b = 0.4*ones(1,16);
 c = 0.4*ones(1,16);
 % Gain coefficient |g|<1
 g = 0.239999999999999999999;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Puckette and Stautner Matrix
 % ??????????
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% using Hadamard Matrix
 A = g*(1/2)*hadamard(16);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 16 Delay lines, use prime
 % m = [89 97 107 113 149 211 263 293 401 421 433 443 577 601 641 661]';
 % m = [193 373 421 499 569 617 677 751 823 907 929 947 971 991 1019 1039]';
 % m = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-m = DelayLineLengths(16,fs,0.001);
+% m = DelayLineLengths(16,fs,0.001);
+m = prime_power_delays(fs,16,2,10);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));
@@ -84,6 +94,7 @@ z13 = zeros(1,max(m));
 z14 = zeros(1,max(m));
 z15 = zeros(1,max(m));
 z16 = zeros(1,max(m));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loop
 b0 = 0.3;
 b1 = 1 - b0;
@@ -169,18 +180,21 @@ for n = length(segm):length(y)
     z15 = [(x(n)*b(15) + lastA(15)) z15(1:length(z15)-1)]; 
     z16 = [(x(n)*b(16) + lastA(16)) z16(1:length(z16)-1)];
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot
 dt = 1/fs; 
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,y,'g'); hold on;
 plot(t,x,'k'); xlabel('Seconds'); ylabel('Amplitude');
 title('Feedback Delay Network');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Spectrogram
 figure(1) 
 subplot(2,1,1);
 specgram(x);
 subplot(2,1,2);
 specgram(y);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 soundsc(y,fs),
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
