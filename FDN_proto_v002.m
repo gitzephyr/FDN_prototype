@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Mar 20 09:57:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Wed Apr  5 20:13:51 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % FDN_proto_v002.m
@@ -15,6 +15,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% load a sound file
 clear all; close all; clc;
 [x, fs] = audioread('snd/singing.wav');
@@ -24,6 +25,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Sound file');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or create an impulse
 clear all; close all; clc;
 fs = 44100;
@@ -35,6 +37,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or impulse of white noise
 clear all; close all; clc;
 fs = 44100;
@@ -50,18 +53,23 @@ segm = zeros(fs,1);
 x = [segm; x; segm; segm; segm];
 plot(x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% play it!
 soundsc(x,fs);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 y = zeros(1,length(x));
 b = 0.5*ones(1,8);
 c = 0.5*ones(1,8);
 % Gain coefficient |g|<1
 g = 0.269999999999999999999;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Puckette and Stautner Matrix
 % ??????
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% using Hadamard Matrix
 A = g*(1/2)*hadamard(8);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 8 Delay lines, use prime
 % m = [89 97 107 113 149 211 263 293]';
 % m = [401 421 433 443 577 601 641 661]' ;
@@ -70,7 +78,9 @@ A = g*(1/2)*hadamard(8);
 % m = [443 761 1321 1949 3121 4969 5827 7537]';
 % m = [443 1949 4409 9049 11177 12791 15287 17657]';
 % m = [4409 11177 17137 26347 29629 35117 37619 40013]';
-m = DelayLineLengths(8,fs,0.03);
+% m = DelayLineLengths(8,fs,0.03);
+m = prime_power_delays(fs,16,15,50);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));
@@ -80,6 +90,7 @@ z5 = zeros(1,max(m));
 z6 = zeros(1,max(m));
 z7 = zeros(1,max(m));
 z8 = zeros(1,max(m));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loop
 b0 = 0.98;
 b1 = 1 - b0;
@@ -109,6 +120,7 @@ for n = length(segm):length(y)
     z7 = [(x(n)*b(7) + temp*A(7,:)') z7(1:length(z7)-1)]; 
     z8 = [(x(n)*b(8) + temp*A(8,:)') z8(1:length(z8)-1)];
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot
 dt = 1/fs; 
 t = 0:dt:(length(x)*dt)-dt;
@@ -116,12 +128,14 @@ plot(t,y,'g'); hold on;
 plot(t,x,'k'); xlabel('Seconds'); ylabel('Amplitude');
 title('Feedback Delay Network');
 legend('reverb','original');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Spectrogram
 figure(1) 
 subplot(2,1,1);
 specgram(x);
 subplot(2,1,2);
 specgram(y);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 soundsc(y,fs),
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Wed Apr  5 20:13:47 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % prototype 001 
@@ -15,6 +15,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 clear all; close all; clc;
 [x, fs] = audioread('snd/singing.wav');
@@ -24,22 +25,27 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Opera voice');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% play it!
 soundsc(x,fs);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 y = zeros(1,length(x));
 b = 0.3*ones(1,8);
 c = 0.6*ones(1,8);
 % Gain coefficient |g|<1
 g = 0.4;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Puckette Feedback Matrix 
 a = [0 1 1 0;
     -1 0 0 -1;
     1 0 0 -1;
     0 1 -1 0];
 A = (g*(1/sqrt(2)))*a;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% using Hadamard Matrix
 A = g*(1/2)*hadamard(4);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 4 Delay lines, use prime
 % m =[149 211 263 293]';
 % m = [401 421 433 443]';
@@ -52,12 +58,15 @@ A = g*(1/2)*hadamard(4);
 % tmp
 % m = [89 443 1423 4409]';
 % m = [1024 2187 3125 16807]';
-m = DelayLineLengths(4,fs,0.03);
+% m = DelayLineLengths(4,fs,0.03);
+m = prime_power_delays(fs,16,15,50);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));
 z3 = zeros(1,max(m));
 z4 = zeros(1,max(m));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loop
 b0 = 0.25;
 b1 = 1 - b0;
@@ -79,6 +88,7 @@ for n = length(segm):length(y)
     z3 = [(x(n)*b(3) + temp*A(3,:)') z3(1:length(z3)-1)]; 
     z4 = [(x(n)*b(4) + temp*A(4,:)') z4(1:length(z4)-1)]; 
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot
 dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
@@ -86,6 +96,7 @@ plot(t,y,'k'); hold on;
 plot(t,x,'g'); xlabel('Seconds'); ylabel('Amplitude');
 title('Feedback Delay Network');
 legend('reverb','original');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Spectrogram
 figure(1) 
 subplot(2,1,1);
@@ -94,6 +105,7 @@ specgram(x);
 subplot(2,1,2);
 title('reverb');
 specgram(y);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 soundsc(y,fs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
