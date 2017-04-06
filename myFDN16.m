@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : Mon Apr  3 21:17:30 CEST 2017
+% Last Modified on  : Thu Apr  6 18:18:32 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
@@ -42,8 +42,13 @@ classdef myFDN16 < audioPlugin
         % sound speed
         c = 343;
         prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+        
+        % tapped delay line coeff k
+        k = rand(1,16);
     end
     properties (Access = private)
+        % Tapped Delay line
+        tapDel = zeros(44100,2);
         % Delay Lines
         z1 = zeros(192001,2);
         z2 = zeros(192001,2);
@@ -63,6 +68,9 @@ classdef myFDN16 < audioPlugin
         z16 = zeros(192001,2);
         % 
         BufferIndex = 1;
+        
+        BufferTapIndex = 1;
+        TSamples = [432 464 476 570 635 683 747 802 867 922 995 1048 1148 1170 1181 1192];
         % Delay times
         % NSamples = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
         % NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
@@ -111,6 +119,25 @@ classdef myFDN16 < audioPlugin
             
             out = zeros(size(in));
             writeIndex = plugin.BufferIndex;
+            
+            writeTap = plugin.BufferTapIndex;
+            
+            td1_readIndex = writeTap - plugin.TSamples(1);
+            td2_readIndex = writeTap - plugin.TSamples(2);
+            td3_readIndex = writeTap - plugin.TSamples(3);
+            td4_readIndex = writeTap - plugin.TSamples(4);
+            td5_readIndex = writeTap - plugin.TSamples(5);
+            td6_readIndex = writeTap - plugin.TSamples(6);
+            td7_readIndex = writeTap - plugin.TSamples(7);
+            td8_readIndex = writeTap - plugin.TSamples(8);
+            td9_readIndex = writeTap - plugin.TSamples(9);
+            td10_readIndex = writeTap - plugin.TSamples(10);
+            td11_readIndex = writeTap - plugin.TSamples(11);
+            td12_readIndex = writeTap - plugin.TSamples(12);
+            td13_readIndex = writeTap - plugin.TSamples(13);
+            td14_readIndex = writeTap - plugin.TSamples(14);
+            td15_readIndex = writeTap - plugin.TSamples(15);
+            td16_readIndex = writeTap - plugin.TSamples(16);
             
             Z1_readIndex = writeIndex - plugin.NSamples(1);
             Z2_readIndex = writeIndex - plugin.NSamples(2);
@@ -178,6 +205,61 @@ classdef myFDN16 < audioPlugin
                 Z16_readIndex = Z16_readIndex + 192001;
             end
             
+            
+            
+            if td1_readIndex <= 0
+                td1_readIndex = td1_readIndex + 44100;
+            end
+            if td2_readIndex <= 0
+                td2_readIndex = td2_readIndex + 44100;
+            end
+            if td3_readIndex <= 0
+                td3_readIndex = td3_readIndex + 44100;
+            end
+            if td4_readIndex <= 0
+                td4_readIndex = td4_readIndex + 44100;
+            end
+            if td5_readIndex <= 0
+                td5_readIndex = td5_readIndex + 44100;
+            end
+            if td6_readIndex <= 0
+                td6_readIndex = td6_readIndex + 44100;
+            end
+            if td7_readIndex <= 0
+                td7_readIndex = td7_readIndex + 44100;
+            end
+            if td8_readIndex <= 0
+                td8_readIndex = td8_readIndex + 44100;
+            end
+            if td9_readIndex <= 0
+                td9_readIndex = td9_readIndex + 44100;
+            end
+            if td1_readIndex <= 0
+                td1_readIndex = td1_readIndex + 44100;
+            end
+            if td10_readIndex <= 0
+                td10_readIndex = td10_readIndex + 44100;
+            end
+            if td11_readIndex <= 0
+                td11_readIndex = td11_readIndex + 44100;
+            end
+            if td12_readIndex <= 0
+                td12_readIndex = td12_readIndex + 44100;
+            end
+            if td13_readIndex <= 0
+                td13_readIndex = td13_readIndex + 44100;
+            end
+            if td14_readIndex <= 0
+                td14_readIndex = td14_readIndex + 44100;
+            end
+            if td15_readIndex <= 0
+                td15_readIndex = td15_readIndex + 44100;
+            end
+            if td16_readIndex <= 0
+                td16_readIndex = td16_readIndex + 44100;
+            end
+            
+            
             for i = 1:size(in,1)
                 % b and c coff - buffers
                 bN = plugin.B*ones(1,16);
@@ -187,6 +269,16 @@ classdef myFDN16 < audioPlugin
                 % feedback matrix
                 A = plugin.Dampening*(1/2)*hadamard(16);
                 
+                tap_out = (in(i,:) * plugin.Gain) + plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
+                          plugin.k(2)*plugin.tapDel(td2_readIndex) + plugin.k(3)*plugin.tapDel(td3_readIndex) + ...
+                          plugin.k(4)*plugin.tapDel(td4_readIndex) + plugin.k(5)*plugin.tapDel(td5_readIndex) + ...
+                          plugin.k(6)*plugin.tapDel(td6_readIndex) + plugin.k(7)*plugin.tapDel(td7_readIndex) + ...
+                          plugin.k(8)*plugin.tapDel(td8_readIndex) + plugin.k(9)*plugin.tapDel(td9_readIndex) + ...
+                          plugin.k(10)*plugin.tapDel(td10_readIndex) + plugin.k(11)*plugin.tapDel(td11_readIndex) + ...
+                          plugin.k(12)*plugin.tapDel(td12_readIndex) + plugin.k(13)*plugin.tapDel(td13_readIndex) + ...
+                          plugin.k(14)*plugin.tapDel(td14_readIndex) + plugin.k(15)*plugin.tapDel(td15_readIndex) + ...
+                          plugin.k(16)*plugin.tapDel(td16_readIndex);
+                
                 temp = [plugin.z1(Z1_readIndex) plugin.z2(Z2_readIndex)...
                     plugin.z3(Z3_readIndex) plugin.z4(Z4_readIndex)...
                     plugin.z5(Z4_readIndex) plugin.z6(Z6_readIndex)...
@@ -195,8 +287,9 @@ classdef myFDN16 < audioPlugin
                     plugin.z11(Z11_readIndex) plugin.z12(Z12_readIndex)...
                     plugin.z13(Z13_readIndex) plugin.z14(Z14_readIndex)...
                     plugin.z15(Z15_readIndex) plugin.z16(Z16_readIndex)];
+                
                 % equation
-                y = (in(i,:) * plugin.Gain) + cN(1)*plugin.z1(Z1_readIndex) + ...
+                y = tap_out + cN(1)*plugin.z1(Z1_readIndex) + ...
                     cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
                     cN(4)*plugin.z4(Z4_readIndex) + cN(5)*plugin.z5(Z5_readIndex) + ...
                     cN(6)*plugin.z6(Z6_readIndex) + cN(7)*plugin.z7(Z7_readIndex) + ...
@@ -266,30 +359,36 @@ classdef myFDN16 < audioPlugin
 %                 plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
 %                 plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
 
-                plugin.z1(writeIndex,:) = in(i,:)*bN(1) + plugin.lastA(1);
-                plugin.z2(writeIndex,:) = in(i,:)*bN(2) + plugin.lastA(2);
-                plugin.z3(writeIndex,:) = in(i,:)*bN(3) + plugin.lastA(3);
-                plugin.z4(writeIndex,:) = in(i,:)*bN(4) + plugin.lastA(4);
+                plugin.tapDel(writeTap,:) = in(i,:);
+
+                plugin.z1(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(1) + plugin.lastA(1);
+                plugin.z2(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(2) + plugin.lastA(2);
+                plugin.z3(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(3) + plugin.lastA(3);
+                plugin.z4(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(4) + plugin.lastA(4);
                 
-                plugin.z5(writeIndex,:) = in(i,:)*bN(5) + plugin.lastA(5);
-                plugin.z6(writeIndex,:) = in(i,:)*bN(6) + plugin.lastA(6);
-                plugin.z7(writeIndex,:) = in(i,:)*bN(7) + plugin.lastA(7);
-                plugin.z8(writeIndex,:) = in(i,:)*bN(8) + plugin.lastA(8);
+                plugin.z5(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(5) + plugin.lastA(5);
+                plugin.z6(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(6) + plugin.lastA(6);
+                plugin.z7(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(7) + plugin.lastA(7);
+                plugin.z8(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(8) + plugin.lastA(8);
                 
-                plugin.z9(writeIndex,:) = in(i,:)*bN(9) + plugin.lastA(9);
-                plugin.z10(writeIndex,:) = in(i,:)*bN(10) + plugin.lastA(10);
-                plugin.z11(writeIndex,:) = in(i,:)*bN(11) + plugin.lastA(11);
-                plugin.z12(writeIndex,:) = in(i,:)*bN(12) + plugin.lastA(12);
+                plugin.z9(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(9) + plugin.lastA(9);
+                plugin.z10(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(10) + plugin.lastA(10);
+                plugin.z11(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(11) + plugin.lastA(11);
+                plugin.z12(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(12) + plugin.lastA(12);
                 
-                plugin.z13(writeIndex,:) = in(i,:)*bN(13) + plugin.lastA(13);
-                plugin.z14(writeIndex,:) = in(i,:)*bN(14) + plugin.lastA(14);
-                plugin.z15(writeIndex,:) = in(i,:)*bN(15) + plugin.lastA(15)';
-                plugin.z16(writeIndex,:) = in(i,:)*bN(16) + plugin.lastA(16);
+                plugin.z13(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(13) + plugin.lastA(13);
+                plugin.z14(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(14) + plugin.lastA(14);
+                plugin.z15(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(15) + plugin.lastA(15)';
+                plugin.z16(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(16) + plugin.lastA(16);
                 
                 writeIndex = writeIndex + 1;
-                
+                writeTap = writeTap + 1;
+               
                 if writeIndex > 192001
                     writeIndex = 1;
+                end
+                if writeTap > 44100
+                    writeTap = 1;
                 end
                 
                 Z1_readIndex = Z1_readIndex + 1;
@@ -311,6 +410,24 @@ classdef myFDN16 < audioPlugin
                 Z14_readIndex = Z14_readIndex + 1;
                 Z15_readIndex = Z15_readIndex + 1;
                 Z16_readIndex = Z16_readIndex + 1;
+                
+                td1_readIndex = td1_readIndex + 1;
+                td2_readIndex = td2_readIndex + 1;
+                td3_readIndex = td3_readIndex + 1;
+                td4_readIndex = td4_readIndex + 1;
+                td5_readIndex = td5_readIndex + 1;
+                td6_readIndex = td6_readIndex + 1;
+                td7_readIndex = td7_readIndex + 1;
+                td8_readIndex = td8_readIndex + 1;
+                td9_readIndex = td9_readIndex + 1;
+                td10_readIndex = td10_readIndex + 1;
+                td11_readIndex = td11_readIndex + 1;
+                td12_readIndex = td12_readIndex + 1;
+                td13_readIndex = td13_readIndex + 1;
+                td14_readIndex = td14_readIndex + 1;
+                td15_readIndex = td15_readIndex + 1;
+                td16_readIndex = td16_readIndex + 1;
+                
                 
                 if Z1_readIndex > 192001
                     Z1_readIndex = 1;
@@ -363,8 +480,58 @@ classdef myFDN16 < audioPlugin
                     Z16_readIndex = 1;
                 end
                 
+                if td1_readIndex > 44100
+                    td1_readIndex = 1;
+                end
+                if td2_readIndex > 44100
+                    td2_readIndex = 1;
+                end
+                if td3_readIndex > 44100
+                    td3_readIndex = 1;
+                end
+                if td4_readIndex > 44100
+                    td4_readIndex = 1;
+                end
+                if td5_readIndex > 44100
+                    td5_readIndex = 1;
+                end
+                if td6_readIndex > 44100
+                    td6_readIndex = 1;
+                end
+                if td7_readIndex > 44100
+                    td7_readIndex = 1;
+                end
+                if td8_readIndex > 44100
+                    td8_readIndex = 1;
+                end
+                if td9_readIndex > 44100
+                    td9_readIndex = 1;
+                end
+                if td10_readIndex > 44100
+                    td10_readIndex = 1;
+                end
+                if td11_readIndex > 44100
+                    td11_readIndex = 1;
+                end
+                if td12_readIndex > 44100
+                    td12_readIndex = 1;
+                end
+                if td13_readIndex > 44100
+                    td13_readIndex = 1;
+                end
+                if td14_readIndex > 44100
+                    td14_readIndex = 1;
+                end
+                if td15_readIndex > 44100
+                    td15_readIndex = 1;
+                end
+                if td16_readIndex > 44100
+                    td16_readIndex = 1;
+                end
+                
             end
             plugin.BufferIndex = writeIndex;
+            plugin.BufferTapIndex = writeTap;
         end
         function set.pathmin(plugin, val)
             fs = getSampleRate(plugin);
