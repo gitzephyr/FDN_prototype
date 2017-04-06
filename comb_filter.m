@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Author            : Matteo Girardi
-% Created on        : March 15th, 2017
+% Created on        : Mon Mar 15 14:33:00 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Thu Apr  6 18:17:47 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Feedforward comb filter
 % Echo simulator when b0 = 1 and bM = g (|bM| < 1)
@@ -117,3 +117,30 @@ Xden = fft(A,Nfft);  % Frequency response, feedback part
 X = Xnum ./ Xden;    % Should check for divide by zero!
 freqz(B,A,Nspec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Allpass filter
+% y(n) = b0*x(n)+x(n-M)-aM*y(n-M)
+%
+% SOURCE:
+%   https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html
+% 
+clear all; close all; clc;
+[x, SR] = audioread('snd/singing.wav');
+% soundsc(snd,sr);    % original sound
+segm = zeros(SR,1);
+x = [segm; x; segm; segm; segm];
+dt = 1/SR;
+t = 0:dt:(length(x)*dt)-dt;
+[s, c] = size(x);
+% N = samples ago
+% N/sr = seconds ago
+M = floor(SR*0.9);
+y = x;  % set up a new array, same size as the old one
+b0 = 0.6;
+aM = 0.6;
+for n = M+1:length(x)
+        y(n) = b0*x(n) + x(n-M) - aM*y(n-M);
+end
+plot(y, 'k'); hold on;
+plot(x, 'g'); 
+legend('filtered sound','original sound');
+soundsc(y,SR);
