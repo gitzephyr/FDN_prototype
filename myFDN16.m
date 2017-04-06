@@ -21,7 +21,7 @@ classdef myFDN16 < audioPlugin
         B0 = 0.97;
         
         % Delay Time
-        Delay = 1;
+        % Delay = 1;
         
         % Coeff before and after del_buffer
         B = 0.1;
@@ -34,6 +34,14 @@ classdef myFDN16 < audioPlugin
         yLast = 0;
         
         pathmin = 3;
+        pathmax = 5;
+        
+        dmin = 0;
+        dmax = 0;
+        
+        % sound speed
+        c = 343;
+        prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
     end
     properties (Access = private)
         % Delay Lines
@@ -84,6 +92,10 @@ classdef myFDN16 < audioPlugin
             'Mapping',{'lin',0,1}),...
             audioPluginParameter('pathmin',...
             'DisplayName','RoomSizeMin',...
+            'Label','meters',...
+            'Mapping',{'int',1,50}),...
+            audioPluginParameter('pathmax',...
+            'DisplayName','RoomSizeMax',...
             'Label','meters',...
             'Mapping',{'int',1,50}));
 %         PluginInterface = audioPluginInterface(...
@@ -354,28 +366,34 @@ classdef myFDN16 < audioPlugin
             end
             plugin.BufferIndex = writeIndex;
         end
-        
-        function set.Delay(plugin, val)
-            plugin.Delay = val;
+        function set.pathmin(plugin, val)
             fs = getSampleRate(plugin);
-            pathmax = 63;
             
             Np = 16;
             i = [1:Np];
-            prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
-
+            
             % Prime Power Bounds [matlab: floor(log(maxdel)./log(primes(53)))]
             % maxdel=8192; % more than 63 meters at 44100 samples/sec & 343 m/s
             % ppbs = [13,8,5,4,3,3,3,3,2,2,2,2,2,2,2,2]; % 8192 is enough for all
             % ppb(i) = take(i+1,ppbs);
 
             % Approximate desired delay-line lengths using powers of distinct primes:
-            c = 343; % soundspeed in m/s at 20 degrees C for dry air
-            dmin = fs*plugin.pathmin/c;
-            dmax = fs*pathmax/c;
-            dl = dmin * (dmax/dmin).^(i/(Np-1)); % desired delay in samples
-            ppwr = floor(log(dl)./log(prime(1:Np))); % best prime power
-            plugin.NSamples = prime(1:Np).^ppwr; % each delay a power of a distinct prime
+            % c = 343; % soundspeed in m/s at 20 degrees C for dry air
+            plugin.pathmin = val;
+            plugin.dmin = fs*val/plugin.c;
+            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
+            ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
+            plugin.NSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
+        end
+        function set.pathmax(plugin, val)
+            Np = 16;
+            i = [1:Np];
+            plugin.pathmax = val;
+            plugin.dmax = getSampleRate(plugin)*val/plugin.c;
+            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
+            ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
+            plugin.NSamples = plugin.prime(1:Np).^ppwr;
+            
         end
     end
 end
