@@ -29,6 +29,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% pick a sound file
 ls snd/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% load a sound file
 clear all; close all; clc;
 [x, fs] = audioread('snd/singing.wav');
@@ -38,6 +39,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Opera voice');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or create an impulse
 clear all; close all; clc;
 fs = 44100;
@@ -48,6 +50,7 @@ dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 plot(t,x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% or impulse of white noise
 clear all; close all; clc;
 fs = 44100;
@@ -63,24 +66,31 @@ segm = zeros(fs,1);
 x = [segm; x; segm; segm; segm];
 plot(x); xlabel('Seconds'); ylabel('Amplitude');
 title('Impulse');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% play it!
 soundsc(x,fs);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 y = zeros(length(x),1);
-b = 0.29*ones(1,16);
-c = 0.4*ones(1,16);
+% b = 0.29*ones(1,16);
+b = rand(1,16);
+% c = 0.4*ones(1,16);
+c = rand(1,16);
 % Gain coefficient |g|<1
 g = 0.219999999999999999999;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Puckette Feedback Matrix 
 % ??????????????????????
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% using Hadamard Matrix
 A = g*(1/2)*hadamard(16);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Tapped Delay Line
 M = zeros(1,16);
-t = 0.004;
+t = 0.009;
 M(1) = fs*t;
 for i = 2:16
-    r = randi(40);
+    r = randi(100);
     M(i) = M(i-1) + r;
 end
 k = rand(1,16);
@@ -91,11 +101,14 @@ for n = sum(M)+1:length(x)
         + k(11)*x(n-M(10)) + k(12)*x(n-M(11)) + k(13)*x(n-M(12)) + k(14)*x(n-M(13))...
         + k(15)*x(n-M(14)) + k(16)*x(n-M(15));
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 16 Delay lines, use prime
 % m = [89 97 107 113 149 211 263 293 401 421 433 443 577 601 641 661]';
 % m = [193 373 421 499 569 617 677 751 823 907 929 947 971 991 1019 1039]';
 % m = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-m = DelayLineLengths(16,fs,0.05)
+% m = DelayLineLengths(16,fs,0.05)
+m = prime_power_delays(fs,16,10,20);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Delay lines
 z1 = zeros(1,max(m));
 z2 = zeros(1,max(m));
@@ -113,6 +126,7 @@ z13 = zeros(1,max(m));
 z14 = zeros(1,max(m));
 z15 = zeros(1,max(m));
 z16 = zeros(1,max(m));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loop
 b0 = 0.3;
 b1 = 1 - b0;
@@ -197,34 +211,54 @@ for n = length(segm):length(y)
     z15 = [(x(n)*b(15) + lastA(15)) z15(1:length(z15)-1)]; 
     z16 = [(x(n)*b(16) + lastA(16)) z16(1:length(z16)-1)];
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% combine early reflections and late reflections
+yy = y + nX;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot
 dt = 1/fs;
 t = 0:dt:(length(x)*dt)-dt;
 figure(1)
-subplot(4,1,1)
+subplot(5,1,1)
 plot(t,x,'k'); 
-subplot(4,1,2)
+xlabel('sec'); ylabel('amp');
+title('INPUT');
+subplot(5,1,2)
 plot(t,nX,'g');
-subplot(4,1,3)
+xlabel('sec'); ylabel('amp');
+title('Early reflection');
+subplot(5,1,3)
 plot(t,y)
-subplot(4,1,4)
+xlabel('sec'); ylabel('amp');
+title('Late reflections');
+subplot(5,1,4)
 plot(t,nX); hold on;
 plot(t,y);
-xlabel('Seconds'); ylabel('Amplitude');
-title('Feedback Delay Network');
+xlabel('sec'); ylabel('amp');
+title('Early + Late Reflection');
+subplot(5,1,5)
+plot(t,yy)
+xlabel('sec'); ylabel('amp');
+title('OUTPUT');
 % legend('reverb','original');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Spectrogram
 figure(1) 
-subplot(3,1,1);
-title('original sound file');
+subplot(4,1,1);
 specgram(x);
-subplot(3,1,2);
+subplot(4,1,2);
 specgram(nX);
-subplot(3,1,3)
-title('reverb');
+subplot(4,1,3)
 specgram(y);
-%% combine early reflections and late reflections
-yy = y + nX;
+subplot(4,1,4)
+specgram(yy);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 
 soundsc(yy,fs)
+%% 
+soundsc(y,fs)
+%% 
+soundsc(x,fs)
+%%
+soundsc(nX,fs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
