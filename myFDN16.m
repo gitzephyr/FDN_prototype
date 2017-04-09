@@ -18,33 +18,34 @@
 classdef myFDN16 < audioPlugin
     properties 
         % LPF Coeff
-        B0 = 0.97;
-        
+        B0 = 0.1;
         % Delay Time
         % Delay = 1;
-        
         % Coeff before and after del_buffer
-        B = 0.1;
-        C = 0.1;
+        B = rand(1,16);
+        C = rand(1,16);
+        bM = 0.5;
+        cM = 0.5;
         % Feedback Matrix
         Dampening = 0.1;
         % Input Gain
-        Gain = 0.1;
+        Gain = 0.5;
         % LPF
         yLast = 0;
-        
+        % init pathmin and pathmax
         pathmin = 3;
         pathmax = 5;
-        
+        % temp variables
         dmin = 0;
         dmax = 0;
-        
         % sound speed
         c = 343;
+        % prime numbers needed for delay lines
         prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
-        
-        % tapped delay line coeff k
+        % tapped delay line coeff k, random
         k = rand(1,16);
+        % wet 
+        Wet = 0.5;
     end
     properties (Access = private)
         % Tapped Delay line
@@ -66,62 +67,36 @@ classdef myFDN16 < audioPlugin
         z14 = zeros(192001,2);
         z15 = zeros(192001,2);
         z16 = zeros(192001,2);
-        % 
+        % Index
         BufferIndex = 1;
-        
         BufferTapIndex = 1;
+        % Tapped Delay Lines 
         TSamples = [432 464 476 570 635 683 747 802 867 922 995 1048 1148 1170 1181 1192];
         % Delay times
-        % NSamples = [443 1949 4409 5417 6421 7537 8863 9049 10799 11177 12791 13679 14891 15287 16339 17657]';
-        % NSamples = [32 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
-        % NSamples = [256 243 625 343 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
-        % NSamples = [256 729 3125 2401 1331 2197 4913 6859 12167 841 961 1369 1681 1849 2209 2809]';
         NSamples = zeros(1,16);
-        
-        lastA = zeros(1,16);
-        
+        % Last output
+        lastA = zeros(1,16);     
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
-            audioPluginParameter('Gain',...
-            'DisplayName','DRY',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('Dampening',...
-            'DisplayName','Dampening',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('B',...
-            'DisplayName','B Coeff',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('C',...
-            'DisplayName','WET',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('B0',...
-            'DisplayName','LPF Coeff',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('pathmin',...
-            'DisplayName','RoomSizeMin',...
-            'Label','meters',...
-            'Mapping',{'int',1,50}),...
-            audioPluginParameter('pathmax',...
-            'DisplayName','RoomSizeMax',...
-            'Label','meters',...
-            'Mapping',{'int',1,50}));
-%         PluginInterface = audioPluginInterface(...
-%             audioPluginParameter('Delay',...
-%             'DisplayName','Delay',...
-%             'Label','seconds',...
-%             'Mapping',{'lin',0,5}))
-
+            audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('Wet','DisplayName','Wet','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('Dampening','DisplayName','Dampening','Mapping',{'lin',0,0.5}),...
+            audioPluginParameter('bM','DisplayName','B Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('cM','DisplayName','C Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
+            audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
     end
     methods
+        %------------------------------------------------------------------
         function out = process(plugin, in)
-            
-            
+            % 
             out = zeros(size(in));
+            % 
             writeIndex = plugin.BufferIndex;
-            
             writeTap = plugin.BufferTapIndex;
-            
+            % wrapping
             td1_readIndex = writeTap - plugin.TSamples(1);
             td2_readIndex = writeTap - plugin.TSamples(2);
             td3_readIndex = writeTap - plugin.TSamples(3);
@@ -138,7 +113,7 @@ classdef myFDN16 < audioPlugin
             td14_readIndex = writeTap - plugin.TSamples(14);
             td15_readIndex = writeTap - plugin.TSamples(15);
             td16_readIndex = writeTap - plugin.TSamples(16);
-            
+            % wrapping 
             Z1_readIndex = writeIndex - plugin.NSamples(1);
             Z2_readIndex = writeIndex - plugin.NSamples(2);
             Z3_readIndex = writeIndex - plugin.NSamples(3);
@@ -156,6 +131,7 @@ classdef myFDN16 < audioPlugin
             Z15_readIndex = writeIndex - plugin.NSamples(15);
             Z16_readIndex = writeIndex - plugin.NSamples(16);
             
+            %
             if Z1_readIndex <= 0
                 Z1_readIndex = Z1_readIndex + 192001;
             end
@@ -205,8 +181,7 @@ classdef myFDN16 < audioPlugin
                 Z16_readIndex = Z16_readIndex + 192001;
             end
             
-            
-            
+            % 
             if td1_readIndex <= 0
                 td1_readIndex = td1_readIndex + 44100;
             end
@@ -259,17 +234,17 @@ classdef myFDN16 < audioPlugin
                 td16_readIndex = td16_readIndex + 44100;
             end
             
-            
             for i = 1:size(in,1)
                 % b and c coff - buffers
-                bN = plugin.B*ones(1,16);
-                cN = plugin.C*ones(1,16);
+                bN = plugin.B*plugin.bM;
+                cN = plugin.C*plugin.cM;
                 % LPF coeff
                 B1 = 1 - plugin.B0;
                 % feedback matrix
                 A = plugin.Dampening*(1/2)*hadamard(16);
                 
-                tap_out = (in(i,:) * plugin.Gain) + plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
+                % tap_out = in(i,:) + plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
+                tap_out = plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
                           plugin.k(2)*plugin.tapDel(td2_readIndex) + plugin.k(3)*plugin.tapDel(td3_readIndex) + ...
                           plugin.k(4)*plugin.tapDel(td4_readIndex) + plugin.k(5)*plugin.tapDel(td5_readIndex) + ...
                           plugin.k(6)*plugin.tapDel(td6_readIndex) + plugin.k(7)*plugin.tapDel(td7_readIndex) + ...
@@ -287,9 +262,8 @@ classdef myFDN16 < audioPlugin
                     plugin.z11(Z11_readIndex) plugin.z12(Z12_readIndex)...
                     plugin.z13(Z13_readIndex) plugin.z14(Z14_readIndex)...
                     plugin.z15(Z15_readIndex) plugin.z16(Z16_readIndex)];
-                
                 % equation
-                y = tap_out + cN(1)*plugin.z1(Z1_readIndex) + ...
+                out(i,:) = (in(i,:)*plugin.Gain) + (tap_out + cN(1)*plugin.z1(Z1_readIndex) + ...
                     cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
                     cN(4)*plugin.z4(Z4_readIndex) + cN(5)*plugin.z5(Z5_readIndex) + ...
                     cN(6)*plugin.z6(Z6_readIndex) + cN(7)*plugin.z7(Z7_readIndex) + ...
@@ -297,9 +271,9 @@ classdef myFDN16 < audioPlugin
                     cN(10)*plugin.z10(Z10_readIndex) + cN(11)*plugin.z11(Z11_readIndex) + ...
                     cN(12)*plugin.z12(Z12_readIndex) + cN(13)*plugin.z13(Z13_readIndex) + ...
                     cN(14)*plugin.z14(Z14_readIndex) + cN(15)*plugin.z15(Z15_readIndex) + ...
-                    cN(16)*plugin.z16(Z16_readIndex);
+                    cN(16)*plugin.z16(Z16_readIndex));
                 % out
-                out(i,:) = y;
+                % out(i,:) = y;
                 
                 % LOWPASS Filter
                 plugin.lastA(1) = B1*(temp*A(1,:)') + plugin.B0*plugin.lastA(1);
@@ -359,7 +333,7 @@ classdef myFDN16 < audioPlugin
 %                 plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
 %                 plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
 
-                plugin.tapDel(writeTap,:) = in(i,:);
+                plugin.tapDel(writeTap,:) = in(i,:) * plugin.Gain;
 
                 plugin.z1(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(1) + plugin.lastA(1);
                 plugin.z2(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(2) + plugin.lastA(2);
@@ -428,7 +402,7 @@ classdef myFDN16 < audioPlugin
                 td15_readIndex = td15_readIndex + 1;
                 td16_readIndex = td16_readIndex + 1;
                 
-                
+                % delay lines
                 if Z1_readIndex > 192001
                     Z1_readIndex = 1;
                 end
@@ -441,7 +415,6 @@ classdef myFDN16 < audioPlugin
                 if Z4_readIndex > 192001
                     Z4_readIndex = 1;
                 end
-                
                 if Z5_readIndex > 192001
                     Z5_readIndex = 1;
                 end
@@ -454,7 +427,6 @@ classdef myFDN16 < audioPlugin
                 if Z8_readIndex > 192001
                     Z8_readIndex = 1;
                 end
-                
                 if Z9_readIndex > 192001
                     Z9_readIndex = 1;
                 end
@@ -480,6 +452,7 @@ classdef myFDN16 < audioPlugin
                     Z16_readIndex = 1;
                 end
                 
+                % tapped Delay lines
                 if td1_readIndex > 44100
                     td1_readIndex = 1;
                 end
@@ -528,17 +501,15 @@ classdef myFDN16 < audioPlugin
                 if td16_readIndex > 44100
                     td16_readIndex = 1;
                 end
-                
             end
             plugin.BufferIndex = writeIndex;
             plugin.BufferTapIndex = writeTap;
         end
+        %------------------------------------------------------------------
         function set.pathmin(plugin, val)
             fs = getSampleRate(plugin);
-            
             Np = 16;
             i = [1:Np];
-            
             % Prime Power Bounds [matlab: floor(log(maxdel)./log(primes(53)))]
             % maxdel=8192; % more than 63 meters at 44100 samples/sec & 343 m/s
             % ppbs = [13,8,5,4,3,3,3,3,2,2,2,2,2,2,2,2]; % 8192 is enough for all
@@ -552,6 +523,7 @@ classdef myFDN16 < audioPlugin
             ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
             plugin.NSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
         end
+        %------------------------------------------------------------------
         function set.pathmax(plugin, val)
             Np = 16;
             i = [1:Np];
@@ -559,8 +531,7 @@ classdef myFDN16 < audioPlugin
             plugin.dmax = getSampleRate(plugin)*val/plugin.c;
             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
             ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
-            plugin.NSamples = plugin.prime(1:Np).^ppwr;
-            
+            plugin.NSamples = plugin.prime(1:Np).^ppwr; 
         end
     end
 end

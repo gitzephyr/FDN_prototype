@@ -17,19 +17,33 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef myFDN < audioPlugin
     properties 
-        % LPF Coeff
-        B0 = 0.97;
+ % LPF Coeff
+        B0 = 0.985;
         % Delay Time
-        Delay = 1;
+        % Delay = 1;
         % Coeff before and after del_buffer
-        B = 0.3;
-        C = 0.6;
+        bN = rand(1,4);
+        C = rand(1);
         % Feedback Matrix
-        Dampening = 0.4;
+        Dampening = 0.1;
         % Input Gain
         Gain = 0.5;
         % LPF
         yLast = 0;
+        % init pathmin and pathmax
+        pathmin = 3;
+        pathmax = 5;
+        % temp variables
+        dmin = 0;
+        dmax = 0;
+        % sound speed
+        c = 343;
+        % prime numbers needed for delay lines
+        prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+        % tapped delay line coeff k, random
+        k = rand(1,16);
+        % wet 
+        Wet = 0.5;
     end
     properties (Access = private)
         % Delay Lines
@@ -37,37 +51,25 @@ classdef myFDN < audioPlugin
         z2 = zeros(220500,2);
         z3 = zeros(220500,2);
         z4 = zeros(220500,2);
-        % 
+        % FDN index
         BufferIndex = 1;
         % Delay times
-        NSamples = [32 81 125 343];
+        NSamples = zeros(1,4);
+        % Last output
+        lastA = zeros(1,16);
     end
     properties (Constant)
-        PluginInterface = audioPluginInterface(...  %<---
-            audioPluginParameter('Gain',...         %<---
-            'DisplayName','Input Gain',...           %<---
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('Dampening',...
-            'DisplayName','Dampening',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('B',...
-            'DisplayName','B Coeff',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('C',...
-            'DisplayName','C Coeff',...
-            'Mapping',{'lin',0,1}),...
-            audioPluginParameter('Delay',...
-            'DisplayName','Delay',...
-            'Label','seconds',...
-            'Mapping',{'int',1,13}));
-%             audioPluginParameter('B0',...
-%             'DisplayName','LPF Coeff',...
-%             'Mapping',{'lin',0,1})
+        PluginInterface = audioPluginInterface(...
+            audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('Dampening','DisplayName','Dampening','Mapping',{'lin',0,0.5}),...
+            audioPluginParameter('C','DisplayName','C Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
+            audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
     end
     methods
         function out = process(plugin, in)
             % b and c coff - buffers
-            bN = plugin.B*ones(1,4);
             cN = plugin.C*ones(1,4);
             
 %             B1 = 1 - plugin.B0;
@@ -95,6 +97,7 @@ classdef myFDN < audioPlugin
             
             for i = 1:size(in,1)
                 
+                B1 = 1 - plugin.B0;
                 % feedback matrix
                 % controls the diffusion
                 % Feedback == Dampening
@@ -102,6 +105,7 @@ classdef myFDN < audioPlugin
                 
                 temp = [plugin.z1(Z1_readIndex) plugin.z2(Z2_readIndex)...
                     plugin.z3(Z3_readIndex) plugin.z4(Z4_readIndex)];
+                
                 % equation
                 y = (in(i,:) * plugin.Gain) + cN(1)*plugin.z1(Z1_readIndex) + ...
                     cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
@@ -110,17 +114,25 @@ classdef myFDN < audioPlugin
                 out(i,:) = y;
                 
                 % LOWPASS Filter
-%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-%                 
-%                 plugin.yLast = sum(y)/2;
+%                 plugin.lastA(1) = B1*(temp*A(1,:)') + plugin.B0*plugin.lastA(1);
+%                 plugin.lastA(2) = B1*(temp*A(2,:)') + plugin.B0*plugin.lastA(2);
+%                 plugin.lastA(3) = B1*(temp*A(3,:)') + plugin.B0*plugin.lastA(3);
+%                 plugin.lastA(4) = B1*(temp*A(4,:)') + plugin.B0*plugin.lastA(4);
+                temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
+                temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
+                temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
+                temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
+                plugin.yLast = sum(y)/2;
                 
-                plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
-                plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
-                plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';
-                plugin.z4(writeIndex,:) = in(i,:)*bN(4) + temp*A(4,:)';
+                plugin.z1(writeIndex,:) = in(i,:)*plugin.bN(1) + temp*A(1,:)';
+                plugin.z2(writeIndex,:) = in(i,:)*plugin.bN(2) + temp*A(2,:)';
+                plugin.z3(writeIndex,:) = in(i,:)*plugin.bN(3) + temp*A(3,:)';
+                plugin.z4(writeIndex,:) = in(i,:)*plugin.bN(4) + temp*A(4,:)';
+                
+%                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + plugin.lastA(1);
+%                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + plugin.lastA(2);
+%                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + plugin.lastA(3);
+%                 plugin.z4(writeIndex,:) = in(i,:)*bN(4) + plugin.lastA(4);
                 
                 writeIndex = writeIndex + 1;
                 
@@ -148,21 +160,28 @@ classdef myFDN < audioPlugin
             end
             plugin.BufferIndex = writeIndex;
         end
-        
-        function set.Delay(plugin, val)
-            plugin.Delay = val;
-            p = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53];
+        %------------------------------------------------------------------
+        function set.pathmin(plugin, val)
             fs = getSampleRate(plugin);
-            M = [fs*0.005 fs*0.009 fs*0.015 fs*0.020 ...
-                 fs*0.028 fs*0.034 fs*0.040 fs*0.055 ...
-                 fs*0.06 fs*0.065 fs*0.070 fs*0.077 ...
-                 fs*0.08 fs*0.087 fs*0.099 fs*0.12];
-            M = round(M);
-            d = log(M(val:val+3));
-            n = log(p(val:val+3));
-            x = d./n;
-            nx = round(x);
-            plugin.NSamples = p(val:val+3).^nx;
+            Np = 4;
+            i = [1:Np];
+            % Approximate desired delay-line lengths using powers of distinct primes:
+            % c = 343; % soundspeed in m/s at 20 degrees C for dry air
+            plugin.pathmin = val;
+            plugin.dmin = fs*val/plugin.c;
+            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
+            ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
+            plugin.NSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
+        end
+        %------------------------------------------------------------------
+        function set.pathmax(plugin, val)
+            Np = 4;
+            i = [1:Np];
+            plugin.pathmax = val;
+            plugin.dmax = getSampleRate(plugin)*val/plugin.c;
+            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
+            ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
+            plugin.NSamples = plugin.prime(1:Np).^ppwr; 
         end
     end
 end
