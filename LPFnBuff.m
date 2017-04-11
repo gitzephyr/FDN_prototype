@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Apr 10 23:07:41 CEST 2017
 % Last Modified by  : Matteo Girardi (girardi dot matthew at gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Tue Apr 11 22:45:06 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- LPF and buffer -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % testing LPF and (circular) buffer delay line
@@ -17,16 +17,8 @@ classdef LPFnBuff < audioPlugin
         Gain = 0.5;
         % LPF
         yLPFprev = [0 0];
-        % init pathmin and pathmax
-        pathmin = 3;
-        pathmax = 5;
-        % temp variables
-        dmin = 0;
-        dmax = 0;
-        % sound speed
-        c = 343;
-        % prime numbers needed for delay lines
-        prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+        % init delay in samples
+        Delay = 0.001;
     end
     properties (Access = private)
         % Delay Line
@@ -34,14 +26,13 @@ classdef LPFnBuff < audioPlugin
         % index
         BufferIndex = 1;
         % Delay time in samples
-        DSamples = 22050;
+        DSamples = 1;
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
             audioPluginParameter('Gain','DisplayName','Dry','Mapping',{'lin',0,1}),...
-            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}));
-%             audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
-%             audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
+            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('Delay','DisplayName','Delay','Label','ms','Mapping',{'lin',0.001,1}));
     end
     methods
         function out = process(plugin, in)
@@ -79,27 +70,9 @@ classdef LPFnBuff < audioPlugin
             end
             plugin.BufferIndex = writeIndex;
         end
-        %------------------------------------------------------------------
-%         function set.pathmin(plugin, val)
-%             Np = 1;
-%             i = [1:Np];
-%             % Approximate desired delay-line lengths using powers of distinct primes:
-%             % c = 343; % soundspeed in m/s at 20 degrees C for dry air
-%             plugin.pathmin = val;
-%             plugin.dmin = getSampleRate(plugin)*val/plugin.c;
-%             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
-%             ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
-%             plugin.DSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
-%         end
-%         %------------------------------------------------------------------
-%         function set.pathmax(plugin, val)
-%             Np = 1;
-%             i = [1:Np];
-%             plugin.pathmax = val;
-%             plugin.dmax = getSampleRate(plugin)*val/plugin.c;
-%             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
-%             ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
-%             plugin.DSamples = plugin.prime(1:Np).^ppwr; 
-%         end
+        function set.Delay(plugin, val)
+            plugin.Delay = val;
+            plugin.DSamples = floor(getSampleRate(plugin)*val);
+        end
     end
 end
