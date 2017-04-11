@@ -5,22 +5,14 @@
 % Last Modified on  : 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- LPF and buffer -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
-% Real-time implementation of FDN
-% you need the Audio System Toolbox!! 
-% 
-% 4 Delay + LOWPASS Filter
-% based on: 
-% - Physical Audio Signal Processing
-%   for Virtual Musical Instruments and Audio Effects
-%   Julius O. Smith III
-% p. 65-67, p.85-127
+% testing LPF and (circular) buffer delay line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef LPFnBuff < audioPlugin
     properties 
         % LPF Coeff
         B0 = 0.985;
         % Coeff before and after del_buffer
-        cN = rand(1);
+        % cN = rand(1);
         % Input Gain
         Gain = 0.5;
         % LPF
@@ -42,14 +34,14 @@ classdef LPFnBuff < audioPlugin
         % index
         BufferIndex = 1;
         % Delay time in samples
-        DSamples = 44;
+        DSamples = 22050;
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
             audioPluginParameter('Gain','DisplayName','Dry','Mapping',{'lin',0,1}),...
-            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
-            audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
-            audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
+            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}));
+%             audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
+%             audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
     end
     methods
         function out = process(plugin, in)
@@ -63,14 +55,14 @@ classdef LPFnBuff < audioPlugin
                 readIndexZ = readIndexZ + 220500;
             end
             % 
-            for i = 1:size(in,1)                
+            for i = 1:size(in,1)
                 B1 = 1 - plugin.B0;
                 % LowPass Filters after delay line
                 plugin.yLPFprev = plugin.B0*plugin.z1(readIndexZ) + B1*plugin.yLPFprev;
-                % output - equation                
-                out(i,:) = (in(i,:) * plugin.Gain) + plugin.cN * plugin.yLPFprev;
+                % output - equation
+                out(i,:) = (in(i,:) * plugin.Gain) + plugin.yLPFprev;
                 % update delay line
-                plugin.z1(writeIndex,:) = plugin.yLPFprev;
+                plugin.z1(writeIndex,:) = in(i,:);
                 
                 % update writeIndex
                 writeIndex = writeIndex + 1;
@@ -88,26 +80,26 @@ classdef LPFnBuff < audioPlugin
             plugin.BufferIndex = writeIndex;
         end
         %------------------------------------------------------------------
-        function set.pathmin(plugin, val)
-            Np = 1;
-            i = [1:Np];
-            % Approximate desired delay-line lengths using powers of distinct primes:
-            % c = 343; % soundspeed in m/s at 20 degrees C for dry air
-            plugin.pathmin = val;
-            plugin.dmin = getSampleRate(plugin)*val/plugin.c;
-            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
-            ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
-            plugin.DSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
-        end
-        %------------------------------------------------------------------
-        function set.pathmax(plugin, val)
-            Np = 1;
-            i = [1:Np];
-            plugin.pathmax = val;
-            plugin.dmax = getSampleRate(plugin)*val/plugin.c;
-            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
-            ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
-            plugin.DSamples = plugin.prime(1:Np).^ppwr; 
-        end
+%         function set.pathmin(plugin, val)
+%             Np = 1;
+%             i = [1:Np];
+%             % Approximate desired delay-line lengths using powers of distinct primes:
+%             % c = 343; % soundspeed in m/s at 20 degrees C for dry air
+%             plugin.pathmin = val;
+%             plugin.dmin = getSampleRate(plugin)*val/plugin.c;
+%             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
+%             ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
+%             plugin.DSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
+%         end
+%         %------------------------------------------------------------------
+%         function set.pathmax(plugin, val)
+%             Np = 1;
+%             i = [1:Np];
+%             plugin.pathmax = val;
+%             plugin.dmax = getSampleRate(plugin)*val/plugin.c;
+%             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
+%             ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
+%             plugin.DSamples = plugin.prime(1:Np).^ppwr; 
+%         end
     end
 end
