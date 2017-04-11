@@ -22,8 +22,8 @@ classdef myFDN < audioPlugin
         % Delay Time
         % Delay = 1;
         % Coeff before and after del_buffer
-        bN = rand(1,4);
-        C = rand(1);
+        bFdn = rand(1,4);
+        cFdn = rand(1);
         % Feedback Matrix
         Dampening = 0.1;
         % Input Gain
@@ -47,7 +47,7 @@ classdef myFDN < audioPlugin
     end
     properties (Access = private)
         % Delay Lines
-        z1 = zeros(220500,2); % 220500
+        z1 = zeros(220500,2);
         z2 = zeros(220500,2);
         z3 = zeros(220500,2);
         z4 = zeros(220500,2);
@@ -55,14 +55,14 @@ classdef myFDN < audioPlugin
         BufferIndex = 1;
         % Delay times
         NSamples = zeros(1,4);
-        % Last output
-        lastA = zeros(1,16);
+        % Last output of LPF
+        lpfPrev = zeros(1,16);
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
             audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
             audioPluginParameter('Dampening','DisplayName','Dampening','Mapping',{'lin',0,0.5}),...
-            audioPluginParameter('C','DisplayName','C Coeff','Mapping',{'lin',0,1}),...
+            audioPluginParameter('cFdn','DisplayName','C Coeff','Mapping',{'lin',0,1}),...
             audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
             audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
             audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
@@ -70,47 +70,52 @@ classdef myFDN < audioPlugin
     methods
         function out = process(plugin, in)
             % b and c coff - buffers
-            cN = plugin.C*ones(1,4);
+            cN = plugin.cFdn*ones(1,4);
             
-%             B1 = 1 - plugin.B0;
+            B1 = 1 - plugin.B0;
             
             out = zeros(size(in));
             writeIndex = plugin.BufferIndex;
             
-            Z1_readIndex = writeIndex - plugin.NSamples(1);
-            Z2_readIndex = writeIndex - plugin.NSamples(2);
-            Z3_readIndex = writeIndex - plugin.NSamples(3);
-            Z4_readIndex = writeIndex - plugin.NSamples(4);
+            readIndexZ1 = writeIndex - plugin.NSamples(1);
+            readIndexZ2 = writeIndex - plugin.NSamples(2);
+            readIndexZ3 = writeIndex - plugin.NSamples(3);
+            readIndexZ4 = writeIndex - plugin.NSamples(4);
             
-            if Z1_readIndex <= 0
-                Z1_readIndex = Z1_readIndex + 220500;
+            if readIndexZ1 <= 0
+                readIndexZ1 = readIndexZ1 + 220500;
             end
-            if Z2_readIndex <= 0
-                Z2_readIndex = Z2_readIndex + 220500;
+            if readIndexZ2 <= 0
+                readIndexZ2 = readIndexZ2 + 220500;
             end
-            if Z3_readIndex <= 0
-                Z3_readIndex = Z3_readIndex + 220500;
+            if readIndexZ3 <= 0
+                readIndexZ3 = readIndexZ3 + 220500;
             end
-            if Z4_readIndex <= 0
-                Z4_readIndex = Z4_readIndex + 220500;
+            if readIndexZ4 <= 0
+                readIndexZ4 = readIndexZ4 + 220500;
             end
             
             for i = 1:size(in,1)
-                
+                % lpf coeff
                 B1 = 1 - plugin.B0;
-                % feedback matrix
-                % controls the diffusion
-                % Feedback == Dampening
+                % feedback matrix, controls diffusion
                 A = plugin.Dampening*(1/2)*hadamard(4);
-                
-                temp = [plugin.z1(Z1_readIndex) plugin.z2(Z2_readIndex)...
-                    plugin.z3(Z3_readIndex) plugin.z4(Z4_readIndex)];
-                
+                % tmp delay samples
+                temp = [plugin.z1(readIndexZ1) plugin.z2(readIndexZ2)...
+                    plugin.z3(readIndexZ3) plugin.z4(readIndexZ4)];
+                % LowPass Filters after each delay line
+                plugin.lpfPrev(1) = plugin.B0*plugin.z1(readIndexZ1) + B1*plugin.lpfPrev(1);
+                plugin.lpfPrev(2) = plugin.B0*plugin.z2(readIndexZ2) + B1*plugin.lpfPrev(2);
+                plugin.lpfPrev(3) = plugin.B0*plugin.z3(readIndexZ3) + B1*plugin.lpfPrev(3);
+                plugin.lpfPrev(4) = plugin.B0*plugin.z4(readIndexZ4) + B1*plugin.lpfPrev(4);
                 % equation
-                y = (in(i,:) * plugin.Gain) + cN(1)*plugin.z1(Z1_readIndex) + ...
-                    cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
-                    cN(4)*plugin.z4(Z4_readIndex);
-                % out
+%                 outBuffers = cN(1)*plugin.z1(Z1_readIndex) + ...
+%                     cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
+%                     cN(4)*plugin.z4(Z4_readIndex);
+                outBuffers = cN(1) * plugin.lpfPrev(1) + cN(2) * plugin.lpfPrev(2) + ...
+                    cN(3) * plugin.lpfPrev(3) + cN(4) * plugin.lpfPrev(4);
+                y = (in(i,:) * plugin.Gain) + outBuffers;
+                % output
                 out(i,:) = y;
                 
                 % LOWPASS Filter
@@ -118,21 +123,21 @@ classdef myFDN < audioPlugin
 %                 plugin.lastA(2) = B1*(temp*A(2,:)') + plugin.B0*plugin.lastA(2);
 %                 plugin.lastA(3) = B1*(temp*A(3,:)') + plugin.B0*plugin.lastA(3);
 %                 plugin.lastA(4) = B1*(temp*A(4,:)') + plugin.B0*plugin.lastA(4);
-                temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-                temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-                temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-                temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-                plugin.yLast = sum(y)/2;
+%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
+%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
+%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
+%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
+%                 plugin.yLast = sum(y)/2;
                 
-                plugin.z1(writeIndex,:) = in(i,:)*plugin.bN(1) + temp*A(1,:)';
-                plugin.z2(writeIndex,:) = in(i,:)*plugin.bN(2) + temp*A(2,:)';
-                plugin.z3(writeIndex,:) = in(i,:)*plugin.bN(3) + temp*A(3,:)';
-                plugin.z4(writeIndex,:) = in(i,:)*plugin.bN(4) + temp*A(4,:)';
-                
-%                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + plugin.lastA(1);
-%                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + plugin.lastA(2);
-%                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + plugin.lastA(3);
-%                 plugin.z4(writeIndex,:) = in(i,:)*bN(4) + plugin.lastA(4);
+%                 plugin.z1(writeIndex,:) = plugin.lastA(1)*plugin.bN(1) + temp*A(1,:)';
+%                 plugin.z2(writeIndex,:) = plugin.lastA(2)*plugin.bN(2) + temp*A(2,:)';
+%                 plugin.z3(writeIndex,:) = plugin.lastA(3)*plugin.bN(3) + temp*A(3,:)';
+%                 plugin.z4(writeIndex,:) = plugin.lastA(4)*plugin.bN(4) + temp*A(4,:)';
+                % y
+                plugin.z1(writeIndex,:) = in(i,:)*plugin.bFdn(1) + temp*A(1,:)';
+                plugin.z2(writeIndex,:) = in(i,:)*plugin.bFdn(2) + temp*A(2,:)';
+                plugin.z3(writeIndex,:) = in(i,:)*plugin.bFdn(3) + temp*A(3,:)';
+                plugin.z4(writeIndex,:) = in(i,:)*plugin.bFdn(4) + temp*A(4,:)';
                 
                 writeIndex = writeIndex + 1;
                 
@@ -140,22 +145,22 @@ classdef myFDN < audioPlugin
                     writeIndex = 1;
                 end
                 
-                Z1_readIndex = Z1_readIndex + 1;
-                Z2_readIndex = Z2_readIndex + 1;
-                Z3_readIndex = Z3_readIndex + 1;
-                Z4_readIndex = Z4_readIndex + 1;
+                readIndexZ1 = readIndexZ1 + 1;
+                readIndexZ2 = readIndexZ2 + 1;
+                readIndexZ3 = readIndexZ3 + 1;
+                readIndexZ4 = readIndexZ4 + 1;
                 
-                if Z1_readIndex > 220500
-                    Z1_readIndex = 1;
+                if readIndexZ1 > 220500
+                    readIndexZ1 = 1;
                 end
-                if Z2_readIndex > 220500
-                    Z2_readIndex = 1;
+                if readIndexZ2 > 220500
+                    readIndexZ2 = 1;
                 end
-                if Z3_readIndex > 220500
-                    Z3_readIndex = 1;
+                if readIndexZ3 > 220500
+                    readIndexZ3 = 1;
                 end
-                if Z4_readIndex > 220500
-                    Z4_readIndex = 1;
+                if readIndexZ4 > 220500
+                    readIndexZ4 = 1;
                 end
             end
             plugin.BufferIndex = writeIndex;
