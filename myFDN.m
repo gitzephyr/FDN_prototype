@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : Mon Apr  3 21:17:25 CEST 2017
+% Last Modified on  : Wed Apr 12 22:31:46 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
@@ -56,7 +56,7 @@ classdef myFDN < audioPlugin
         % Delay times
         NSamples = zeros(1,4);
         % Last output of LPF
-        lpfPrev = zeros(1,16);
+        lpfPrev = zeros(1,4);
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
@@ -109,35 +109,23 @@ classdef myFDN < audioPlugin
                 plugin.lpfPrev(3) = plugin.B0*plugin.z3(readIndexZ3) + B1*plugin.lpfPrev(3);
                 plugin.lpfPrev(4) = plugin.B0*plugin.z4(readIndexZ4) + B1*plugin.lpfPrev(4);
                 % equation
-%                 outBuffers = cN(1)*plugin.z1(Z1_readIndex) + ...
-%                     cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
-%                     cN(4)*plugin.z4(Z4_readIndex);
                 outBuffers = cN(1) * plugin.lpfPrev(1) + cN(2) * plugin.lpfPrev(2) + ...
                     cN(3) * plugin.lpfPrev(3) + cN(4) * plugin.lpfPrev(4);
                 y = (in(i,:) * plugin.Gain) + outBuffers;
                 % output
                 out(i,:) = y;
+
+                % -- it works, using lpfPrev
+                plugin.z1(writeIndex,:) = in(i,:)*plugin.bFdn(1) + plugin.lpfPrev*A(1,:)';
+                plugin.z2(writeIndex,:) = in(i,:)*plugin.bFdn(2) + plugin.lpfPrev*A(2,:)';
+                plugin.z3(writeIndex,:) = in(i,:)*plugin.bFdn(3) + plugin.lpfPrev*A(3,:)';
+                plugin.z4(writeIndex,:) = in(i,:)*plugin.bFdn(4) + plugin.lpfPrev*A(4,:)';
                 
-                % LOWPASS Filter
-%                 plugin.lastA(1) = B1*(temp*A(1,:)') + plugin.B0*plugin.lastA(1);
-%                 plugin.lastA(2) = B1*(temp*A(2,:)') + plugin.B0*plugin.lastA(2);
-%                 plugin.lastA(3) = B1*(temp*A(3,:)') + plugin.B0*plugin.lastA(3);
-%                 plugin.lastA(4) = B1*(temp*A(4,:)') + plugin.B0*plugin.lastA(4);
-%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-%                 plugin.yLast = sum(y)/2;
-                
-%                 plugin.z1(writeIndex,:) = plugin.lastA(1)*plugin.bN(1) + temp*A(1,:)';
-%                 plugin.z2(writeIndex,:) = plugin.lastA(2)*plugin.bN(2) + temp*A(2,:)';
-%                 plugin.z3(writeIndex,:) = plugin.lastA(3)*plugin.bN(3) + temp*A(3,:)';
-%                 plugin.z4(writeIndex,:) = plugin.lastA(4)*plugin.bN(4) + temp*A(4,:)';
-                % y
-                plugin.z1(writeIndex,:) = in(i,:)*plugin.bFdn(1) + temp*A(1,:)';
-                plugin.z2(writeIndex,:) = in(i,:)*plugin.bFdn(2) + temp*A(2,:)';
-                plugin.z3(writeIndex,:) = in(i,:)*plugin.bFdn(3) + temp*A(3,:)';
-                plugin.z4(writeIndex,:) = in(i,:)*plugin.bFdn(4) + temp*A(4,:)';
+                % -- it works, using temp 
+%                 plugin.z1(writeIndex,:) = in(i,:)*plugin.bFdn(1) + temp*A(1,:)';
+%                 plugin.z2(writeIndex,:) = in(i,:)*plugin.bFdn(2) + temp*A(2,:)';
+%                 plugin.z3(writeIndex,:) = in(i,:)*plugin.bFdn(3) + temp*A(3,:)';
+%                 plugin.z4(writeIndex,:) = in(i,:)*plugin.bFdn(4) + temp*A(4,:)';
                 
                 writeIndex = writeIndex + 1;
                 
