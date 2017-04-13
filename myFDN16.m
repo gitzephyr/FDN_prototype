@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : Thu Apr  6 18:18:32 CEST 2017
+% Last Modified on  : Wed Apr 12 23:03:05 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
@@ -19,8 +19,6 @@ classdef myFDN16 < audioPlugin
     properties 
         % LPF Coeff
         B0 = 0.1;
-        % Delay Time
-        % Delay = 1;
         % Coeff before and after del_buffer
         B = rand(1,16);
         C = rand(1,16);
@@ -30,8 +28,6 @@ classdef myFDN16 < audioPlugin
         Dampening = 0.1;
         % Input Gain
         Gain = 0.5;
-        % LPF
-        yLast = 0;
         % init pathmin and pathmax
         pathmin = 3;
         pathmax = 5;
@@ -41,11 +37,10 @@ classdef myFDN16 < audioPlugin
         % sound speed
         c = 343;
         % prime numbers needed for delay lines
-        prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131];
+        prime = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53];
         % tapped delay line coeff k, random
         k = rand(1,16);
-        % wet 
-        Wet = 0.5;
+        kERefl = 0.5;
     end
     properties (Access = private)
         % Tapped Delay line
@@ -73,20 +68,19 @@ classdef myFDN16 < audioPlugin
         % Tapped Delay Lines 
         TSamples = [432 464 476 570 635 683 747 802 867 922 995 1048 1148 1170 1181 1192];
         % Delay times
-        NSamples = zeros(1,16);
+        NSamples = [512 729 625 343 1331 2197 289 361 529 841 961 1369 1681 1849 2209 2809];
         % Last output
-        lastA = zeros(1,16);     
+        lpfPrev = zeros(1,16);     
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
             audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
-            audioPluginParameter('Wet','DisplayName','Wet','Label','%','Mapping',{'lin',0,1}),...
-            audioPluginParameter('Dampening','DisplayName','Dampening','Mapping',{'lin',0,0.5}),...
-            audioPluginParameter('bM','DisplayName','B Coeff','Mapping',{'lin',0,1}),...
-            audioPluginParameter('cM','DisplayName','C Coeff','Mapping',{'lin',0,1}),...
-            audioPluginParameter('B0','DisplayName','LPF Coeff','Mapping',{'lin',0,1}),...
-            audioPluginParameter('pathmin','DisplayName','RoomSizeMin','Label','meters','Mapping',{'int',1,50}),...
-            audioPluginParameter('pathmax','DisplayName','RoomSizeMax','Label','meters','Mapping',{'int',1,50}));
+            audioPluginParameter('cM','DisplayName','Wet','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('kERefl','DisplayName','Pre-delay','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('Dampening','DisplayName','Dampening','Label','%','Mapping',{'lin',0,0.5}),...
+            audioPluginParameter('B0','DisplayName','LowPass Filter','Mapping',{'lin',0,1}),...
+            audioPluginParameter('pathmin','DisplayName','Min Room Size','Label','meters','Mapping',{'int',1,50}),...
+            audioPluginParameter('pathmax','DisplayName','Max Room Size','Label','meters','Mapping',{'int',1,50}));
     end
     methods
         %------------------------------------------------------------------
@@ -130,7 +124,7 @@ classdef myFDN16 < audioPlugin
             Z14_readIndex = writeIndex - plugin.NSamples(14);
             Z15_readIndex = writeIndex - plugin.NSamples(15);
             Z16_readIndex = writeIndex - plugin.NSamples(16);
-            
+            % ---------------------------------------------------------
             %
             if Z1_readIndex <= 0
                 Z1_readIndex = Z1_readIndex + 192001;
@@ -180,7 +174,7 @@ classdef myFDN16 < audioPlugin
             if Z16_readIndex <= 0
                 Z16_readIndex = Z16_readIndex + 192001;
             end
-            
+            % ---------------------------------------------------------
             % 
             if td1_readIndex <= 0
                 td1_readIndex = td1_readIndex + 44100;
@@ -238,122 +232,126 @@ classdef myFDN16 < audioPlugin
                 % b and c coff - buffers
                 bN = plugin.B*plugin.bM;
                 cN = plugin.C*plugin.cM;
+                % k coeff, tapped del lines
+                kN = plugin.k*plugin.kERefl;
                 % LPF coeff
                 B1 = 1 - plugin.B0;
                 % feedback matrix
                 A = plugin.Dampening*(1/2)*hadamard(16);
-                
-                % tap_out = in(i,:) + plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
-                tap_out = plugin.k(1)*plugin.tapDel(td1_readIndex) + ...
-                          plugin.k(2)*plugin.tapDel(td2_readIndex) + plugin.k(3)*plugin.tapDel(td3_readIndex) + ...
-                          plugin.k(4)*plugin.tapDel(td4_readIndex) + plugin.k(5)*plugin.tapDel(td5_readIndex) + ...
-                          plugin.k(6)*plugin.tapDel(td6_readIndex) + plugin.k(7)*plugin.tapDel(td7_readIndex) + ...
-                          plugin.k(8)*plugin.tapDel(td8_readIndex) + plugin.k(9)*plugin.tapDel(td9_readIndex) + ...
-                          plugin.k(10)*plugin.tapDel(td10_readIndex) + plugin.k(11)*plugin.tapDel(td11_readIndex) + ...
-                          plugin.k(12)*plugin.tapDel(td12_readIndex) + plugin.k(13)*plugin.tapDel(td13_readIndex) + ...
-                          plugin.k(14)*plugin.tapDel(td14_readIndex) + plugin.k(15)*plugin.tapDel(td15_readIndex) + ...
-                          plugin.k(16)*plugin.tapDel(td16_readIndex);
-                
-                temp = [plugin.z1(Z1_readIndex) plugin.z2(Z2_readIndex)...
-                    plugin.z3(Z3_readIndex) plugin.z4(Z4_readIndex)...
-                    plugin.z5(Z4_readIndex) plugin.z6(Z6_readIndex)...
-                    plugin.z7(Z7_readIndex) plugin.z8(Z8_readIndex)...
-                    plugin.z9(Z9_readIndex) plugin.z10(Z10_readIndex)...
-                    plugin.z11(Z11_readIndex) plugin.z12(Z12_readIndex)...
-                    plugin.z13(Z13_readIndex) plugin.z14(Z14_readIndex)...
-                    plugin.z15(Z15_readIndex) plugin.z16(Z16_readIndex)];
-                % equation
-                out(i,:) = (in(i,:)*plugin.Gain) + (tap_out + cN(1)*plugin.z1(Z1_readIndex) + ...
-                    cN(2)*plugin.z2(Z2_readIndex) + cN(3)*plugin.z3(Z3_readIndex) + ...
-                    cN(4)*plugin.z4(Z4_readIndex) + cN(5)*plugin.z5(Z5_readIndex) + ...
-                    cN(6)*plugin.z6(Z6_readIndex) + cN(7)*plugin.z7(Z7_readIndex) + ...
-                    cN(8)*plugin.z8(Z8_readIndex) + cN(9)*plugin.z9(Z9_readIndex) + ...
-                    cN(10)*plugin.z10(Z10_readIndex) + cN(11)*plugin.z11(Z11_readIndex) + ...
-                    cN(12)*plugin.z12(Z12_readIndex) + cN(13)*plugin.z13(Z13_readIndex) + ...
-                    cN(14)*plugin.z14(Z14_readIndex) + cN(15)*plugin.z15(Z15_readIndex) + ...
-                    cN(16)*plugin.z16(Z16_readIndex));
-                % out
-                % out(i,:) = y;
-                
-                % LOWPASS Filter
-                plugin.lastA(1) = B1*(temp*A(1,:)') + plugin.B0*plugin.lastA(1);
-                plugin.lastA(2) = B1*(temp*A(2,:)') + plugin.B0*plugin.lastA(2);
-                plugin.lastA(3) = B1*(temp*A(3,:)') + plugin.B0*plugin.lastA(3);
-                plugin.lastA(4) = B1*(temp*A(4,:)') + plugin.B0*plugin.lastA(4);
-                plugin.lastA(5) = B1*(temp*A(5,:)') + plugin.B0*plugin.lastA(5);
-                plugin.lastA(6) = B1*(temp*A(6,:)') + plugin.B0*plugin.lastA(6);
-                plugin.lastA(7) = B1*(temp*A(7,:)') + plugin.B0*plugin.lastA(7);
-                plugin.lastA(8) = B1*(temp*A(8,:)') + plugin.B0*plugin.lastA(8);
-                plugin.lastA(9) = B1*(temp*A(9,:)') + plugin.B0*plugin.lastA(9);
-                plugin.lastA(10) = B1*(temp*A(10,:)') + plugin.B0*plugin.lastA(10);
-                plugin.lastA(11) = B1*(temp*A(11,:)') + plugin.B0*plugin.lastA(11);
-                plugin.lastA(12) = B1*(temp*A(12,:)') + plugin.B0*plugin.lastA(12);
-                plugin.lastA(13) = B1*(temp*A(13,:)') + plugin.B0*plugin.lastA(13);
-                plugin.lastA(14) = B1*(temp*A(14,:)') + plugin.B0*plugin.lastA(14);
-                plugin.lastA(15) = B1*(temp*A(15,:)') + plugin.B0*plugin.lastA(15);
-                plugin.lastA(16) = B1*(temp*A(16,:)') + plugin.B0*plugin.lastA(16);
-                
-%                 temp(1) = B1*temp(1) + plugin.B0*plugin.yLast;
-%                 temp(2) = B1*temp(2) + plugin.B0*plugin.yLast;
-%                 temp(3) = B1*temp(3) + plugin.B0*plugin.yLast;
-%                 temp(4) = B1*temp(4) + plugin.B0*plugin.yLast;
-%                 temp(5) = B1*temp(5) + plugin.B0*plugin.yLast;
-%                 temp(6) = B1*temp(6) + plugin.B0*plugin.yLast;
-%                 temp(7) = B1*temp(7) + plugin.B0*plugin.yLast;
-%                 temp(8) = B1*temp(8) + plugin.B0*plugin.yLast;
-%                 temp(9) = B1*temp(9) + plugin.B0*plugin.yLast;
-%                 temp(10) = B1*temp(10) + plugin.B0*plugin.yLast;
-%                 temp(11) = B1*temp(11) + plugin.B0*plugin.yLast;
-%                 temp(12) = B1*temp(12) + plugin.B0*plugin.yLast;
-%                 temp(13) = B1*temp(13) + plugin.B0*plugin.yLast;
-%                 temp(14) = B1*temp(14) + plugin.B0*plugin.yLast;
-%                 temp(15) = B1*temp(15) + plugin.B0*plugin.yLast;
-%                 temp(16) = B1*temp(16) + plugin.B0*plugin.yLast;
-                
-%                 plugin.yLast = sum(y)/2;
-                
-                % buffers
-%                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
-%                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
-%                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';
-%                 plugin.z4(writeIndex,:) = in(i,:)*bN(4) + temp*A(4,:)';
-%                 
-%                 plugin.z5(writeIndex,:) = in(i,:)*bN(5) + temp*A(5,:)';
-%                 plugin.z6(writeIndex,:) = in(i,:)*bN(6) + temp*A(6,:)';
-%                 plugin.z7(writeIndex,:) = in(i,:)*bN(7) + temp*A(7,:)';
-%                 plugin.z8(writeIndex,:) = in(i,:)*bN(8) + temp*A(8,:)';
-%                 
-%                 plugin.z9(writeIndex,:) = in(i,:)*bN(9) + temp*A(9,:)';
-%                 plugin.z10(writeIndex,:) = in(i,:)*bN(10) + temp*A(10,:)';
-%                 plugin.z11(writeIndex,:) = in(i,:)*bN(11) + temp*A(11,:)';
-%                 plugin.z12(writeIndex,:) = in(i,:)*bN(12) + temp*A(12,:)';
-%                 
-%                 plugin.z13(writeIndex,:) = in(i,:)*bN(13) + temp*A(13,:)';
-%                 plugin.z14(writeIndex,:) = in(i,:)*bN(14) + temp*A(14,:)';
-%                 plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
-%                 plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
-
+                % -------------------------------------
+                % tapped delay line
+                tap_out = kN(1)*plugin.tapDel(td1_readIndex) + ...
+                          kN(2)*plugin.tapDel(td2_readIndex) + ...
+                          kN(3)*plugin.tapDel(td3_readIndex) + ...
+                          kN(4)*plugin.tapDel(td4_readIndex) + ...
+                          kN(5)*plugin.tapDel(td5_readIndex) + ...
+                          kN(6)*plugin.tapDel(td6_readIndex) + ...
+                          kN(7)*plugin.tapDel(td7_readIndex) + ...
+                          kN(8)*plugin.tapDel(td8_readIndex) + ...
+                          kN(9)*plugin.tapDel(td9_readIndex) + ...
+                          kN(10)*plugin.tapDel(td10_readIndex) + ...
+                          kN(11)*plugin.tapDel(td11_readIndex) + ...
+                          kN(12)*plugin.tapDel(td12_readIndex) + ...
+                          kN(13)*plugin.tapDel(td13_readIndex) + ...
+                          kN(14)*plugin.tapDel(td14_readIndex) + ...
+                          kN(15)*plugin.tapDel(td15_readIndex) + ...
+                          kN(16)*plugin.tapDel(td16_readIndex);
+                % -------------------------------------
+                % tmp delay samples
+                temp = [plugin.z1(Z1_readIndex)...
+                        plugin.z2(Z2_readIndex)...
+                        plugin.z3(Z3_readIndex)...
+                        plugin.z4(Z4_readIndex)...
+                        plugin.z5(Z4_readIndex)...
+                        plugin.z6(Z6_readIndex)...
+                        plugin.z7(Z7_readIndex)...
+                        plugin.z8(Z8_readIndex)...
+                        plugin.z9(Z9_readIndex)...
+                        plugin.z10(Z10_readIndex)...
+                        plugin.z11(Z11_readIndex)...
+                        plugin.z12(Z12_readIndex)...
+                        plugin.z13(Z13_readIndex)...
+                        plugin.z14(Z14_readIndex)...
+                        plugin.z15(Z15_readIndex)...
+                        plugin.z16(Z16_readIndex)];
+                % -------------------------------------
+                % LowPass Filters after each delay line
+                plugin.lpfPrev(1) = plugin.B0*plugin.z1(Z1_readIndex) + B1*plugin.lpfPrev(1);
+                plugin.lpfPrev(2) = plugin.B0*plugin.z2(Z2_readIndex) + B1*plugin.lpfPrev(2);
+                plugin.lpfPrev(3) = plugin.B0*plugin.z3(Z3_readIndex) + B1*plugin.lpfPrev(3);
+                plugin.lpfPrev(4) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(4);
+                plugin.lpfPrev(5) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(5);
+                plugin.lpfPrev(6) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(6);
+                plugin.lpfPrev(7) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(7);
+                plugin.lpfPrev(8) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(8);
+                plugin.lpfPrev(9) = plugin.B0*plugin.z1(Z1_readIndex) + B1*plugin.lpfPrev(9);
+                plugin.lpfPrev(10) = plugin.B0*plugin.z2(Z2_readIndex) + B1*plugin.lpfPrev(10);
+                plugin.lpfPrev(11) = plugin.B0*plugin.z3(Z3_readIndex) + B1*plugin.lpfPrev(11);
+                plugin.lpfPrev(12) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(12);
+                plugin.lpfPrev(13) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(13);
+                plugin.lpfPrev(14) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(14);
+                plugin.lpfPrev(15) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(15);
+                plugin.lpfPrev(16) = plugin.B0*plugin.z4(Z4_readIndex) + B1*plugin.lpfPrev(16);
+                % -------------------------------------
+                % equation -- output
+                out(i,:) = (in(i,:)*plugin.Gain) + tap_out + ...
+                            cN(1)*plugin.lpfPrev(1) + ...
+                            cN(2)*plugin.lpfPrev(2) + ...
+                            cN(3)*plugin.lpfPrev(3) + ...
+                            cN(4)*plugin.lpfPrev(4) + ...
+                            cN(5)*plugin.lpfPrev(5) + ...
+                            cN(6)*plugin.lpfPrev(6) + ...
+                            cN(7)*plugin.lpfPrev(7) + ...
+                            cN(8)*plugin.lpfPrev(8) + ...
+                            cN(9)*plugin.lpfPrev(9) + ...
+                            cN(10)*plugin.lpfPrev(10) + ...
+                            cN(11)*plugin.lpfPrev(11) + ...
+                            cN(12)*plugin.lpfPrev(12) + ...
+                            cN(13)*plugin.lpfPrev(13) + ...
+                            cN(14)*plugin.lpfPrev(14) + ...
+                            cN(15)*plugin.lpfPrev(15) + ...
+                            cN(16)*plugin.lpfPrev(16);
+                % -------------------------------------
+                % wirte to circular buffers
                 plugin.tapDel(writeTap,:) = in(i,:) * plugin.Gain;
 
-                plugin.z1(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(1) + plugin.lastA(1);
-                plugin.z2(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(2) + plugin.lastA(2);
-                plugin.z3(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(3) + plugin.lastA(3);
-                plugin.z4(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(4) + plugin.lastA(4);
-                
-                plugin.z5(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(5) + plugin.lastA(5);
-                plugin.z6(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(6) + plugin.lastA(6);
-                plugin.z7(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(7) + plugin.lastA(7);
-                plugin.z8(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(8) + plugin.lastA(8);
-                
-                plugin.z9(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(9) + plugin.lastA(9);
-                plugin.z10(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(10) + plugin.lastA(10);
-                plugin.z11(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(11) + plugin.lastA(11);
-                plugin.z12(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(12) + plugin.lastA(12);
-                
-                plugin.z13(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(13) + plugin.lastA(13);
-                plugin.z14(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(14) + plugin.lastA(14);
-                plugin.z15(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(15) + plugin.lastA(15)';
-                plugin.z16(writeIndex,:) = plugin.tapDel(td16_readIndex)*bN(16) + plugin.lastA(16);
+                plugin.z1(writeIndex,:) = in(i,:)*bN(1) + temp*A(1,:)';
+                plugin.z2(writeIndex,:) = in(i,:)*bN(2) + temp*A(2,:)';
+                plugin.z3(writeIndex,:) = in(i,:)*bN(3) + temp*A(3,:)';
+                plugin.z4(writeIndex,:) = in(i,:)*bN(4) + temp*A(4,:)';
+                plugin.z5(writeIndex,:) = in(i,:)*bN(5) + temp*A(5,:)';
+                plugin.z6(writeIndex,:) = in(i,:)*bN(6) + temp*A(6,:)';
+                plugin.z7(writeIndex,:) = in(i,:)*bN(7) + temp*A(7,:)';
+                plugin.z8(writeIndex,:) = in(i,:)*bN(8) + temp*A(8,:)';
+                plugin.z9(writeIndex,:) = in(i,:)*bN(9) + temp*A(9,:)';
+                plugin.z10(writeIndex,:) = in(i,:)*bN(10) + temp*A(10,:)';
+                plugin.z11(writeIndex,:) = in(i,:)*bN(11) + temp*A(11,:)';
+                plugin.z12(writeIndex,:) = in(i,:)*bN(12) + temp*A(12,:)';
+                plugin.z13(writeIndex,:) = in(i,:)*bN(13) + temp*A(13,:)';
+                plugin.z14(writeIndex,:) = in(i,:)*bN(14) + temp*A(14,:)';
+                plugin.z15(writeIndex,:) = in(i,:)*bN(15) + temp*A(15,:)';
+                plugin.z16(writeIndex,:) = in(i,:)*bN(16) + temp*A(16,:)';
+
+                % it works, however too much feedback
+%                 plugin.z1(writeIndex,:) = in(i,:)*bN(1) + plugin.lpfPrev*A(1,:)';
+%                 plugin.z2(writeIndex,:) = in(i,:)*bN(2) + plugin.lpfPrev*A(2,:)';
+%                 plugin.z3(writeIndex,:) = in(i,:)*bN(3) + plugin.lpfPrev*A(3,:)';
+%                 plugin.z4(writeIndex,:) = in(i,:)*bN(4) + plugin.lpfPrev*A(4,:)';
+%                 
+%                 plugin.z5(writeIndex,:) = in(i,:)*bN(5) + plugin.lpfPrev*A(5,:)';
+%                 plugin.z6(writeIndex,:) = in(i,:)*bN(6) + plugin.lpfPrev*A(6,:)';
+%                 plugin.z7(writeIndex,:) = in(i,:)*bN(7) + plugin.lpfPrev*A(7,:)';
+%                 plugin.z8(writeIndex,:) = in(i,:)*bN(8) + plugin.lpfPrev*A(8,:)';
+%                 
+%                 plugin.z9(writeIndex,:) = in(i,:)*bN(9) + plugin.lpfPrev*A(9,:)';
+%                 plugin.z10(writeIndex,:) = in(i,:)*bN(10) + plugin.lpfPrev*A(10,:)';
+%                 plugin.z11(writeIndex,:) = in(i,:)*bN(11) + plugin.lpfPrev*A(11,:)';
+%                 plugin.z12(writeIndex,:) = in(i,:)*bN(12) + plugin.lpfPrev*A(12,:)';
+%                 
+%                 plugin.z13(writeIndex,:) = in(i,:)*bN(13) + plugin.lpfPrev*A(13,:)';
+%                 plugin.z14(writeIndex,:) = in(i,:)*bN(14) + plugin.lpfPrev*A(14,:)';
+%                 plugin.z15(writeIndex,:) = in(i,:)*bN(15) + plugin.lpfPrev*A(15,:)';
+%                 plugin.z16(writeIndex,:) = in(i,:)*bN(16) + plugin.lpfPrev*A(16,:)';
                 
                 writeIndex = writeIndex + 1;
                 writeTap = writeTap + 1;
@@ -364,27 +362,26 @@ classdef myFDN16 < audioPlugin
                 if writeTap > 44100
                     writeTap = 1;
                 end
-                
+                % ---------------------------------------------------------
+                % update buffers read 
                 Z1_readIndex = Z1_readIndex + 1;
                 Z2_readIndex = Z2_readIndex + 1;
                 Z3_readIndex = Z3_readIndex + 1;
                 Z4_readIndex = Z4_readIndex + 1;
-                
                 Z5_readIndex = Z5_readIndex + 1;
                 Z6_readIndex = Z6_readIndex + 1;
                 Z7_readIndex = Z7_readIndex + 1;
                 Z8_readIndex = Z8_readIndex + 1;
-                
                 Z9_readIndex = Z9_readIndex + 1;
                 Z10_readIndex = Z10_readIndex + 1;
                 Z11_readIndex = Z11_readIndex + 1;
                 Z12_readIndex = Z12_readIndex + 1;
-                
                 Z13_readIndex = Z13_readIndex + 1;
                 Z14_readIndex = Z14_readIndex + 1;
                 Z15_readIndex = Z15_readIndex + 1;
                 Z16_readIndex = Z16_readIndex + 1;
-                
+                % ---------------------------------------------------------
+                % update tapped del line read 
                 td1_readIndex = td1_readIndex + 1;
                 td2_readIndex = td2_readIndex + 1;
                 td3_readIndex = td3_readIndex + 1;
@@ -401,7 +398,7 @@ classdef myFDN16 < audioPlugin
                 td14_readIndex = td14_readIndex + 1;
                 td15_readIndex = td15_readIndex + 1;
                 td16_readIndex = td16_readIndex + 1;
-                
+                % ---------------------------------------------------------
                 % delay lines
                 if Z1_readIndex > 192001
                     Z1_readIndex = 1;
@@ -451,7 +448,7 @@ classdef myFDN16 < audioPlugin
                 if Z16_readIndex > 192001
                     Z16_readIndex = 1;
                 end
-                
+                % ---------------------------------------------------------
                 % tapped Delay lines
                 if td1_readIndex > 44100
                     td1_readIndex = 1;
@@ -510,18 +507,14 @@ classdef myFDN16 < audioPlugin
             fs = getSampleRate(plugin);
             Np = 16;
             i = [1:Np];
-            % Prime Power Bounds [matlab: floor(log(maxdel)./log(primes(53)))]
-            % maxdel=8192; % more than 63 meters at 44100 samples/sec & 343 m/s
-            % ppbs = [13,8,5,4,3,3,3,3,2,2,2,2,2,2,2,2]; % 8192 is enough for all
-            % ppb(i) = take(i+1,ppbs);
-
             % Approximate desired delay-line lengths using powers of distinct primes:
             % c = 343; % soundspeed in m/s at 20 degrees C for dry air
             plugin.pathmin = val;
             plugin.dmin = fs*val/plugin.c;
             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
-            ppwr = floor(log(dl)./log(plugin.prime(1:Np))); % best prime power
-            plugin.NSamples = plugin.prime(1:Np).^ppwr; % each delay a power of a distinct prime
+            ppwr = floor(log(dl)./log(plugin.prime(i))); % best prime power
+            plugin.NSamples = plugin.prime(i).^ppwr; % each delay a power of a distinct prime
+            plugin.NSamples
         end
         %------------------------------------------------------------------
         function set.pathmax(plugin, val)
@@ -530,8 +523,12 @@ classdef myFDN16 < audioPlugin
             plugin.pathmax = val;
             plugin.dmax = getSampleRate(plugin)*val/plugin.c;
             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
-            ppwr = floor(0.5 + log(dl)./log(plugin.prime(1:Np)));
-            plugin.NSamples = plugin.prime(1:Np).^ppwr; 
+            ppwr = floor(0.5 + log(dl)./log(plugin.prime(i)));
+            plugin.NSamples = plugin.prime(i).^ppwr;
+            plugin.NSamples
+        end
+        function reset(plugin)
+            
         end
     end
 end
