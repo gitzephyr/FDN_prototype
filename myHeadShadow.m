@@ -2,12 +2,13 @@
 % Author            : Matteo Girardi
 % Created on        : Mon Apr 17 14:12:16 CEST 2017
 % Last Modified by  : Matteo Girardi (girardi dot matthew at gmail.com)
-% Last Modified on  : 
+% Last Modified on  : Thu Apr 20 22:57:43 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Head shadow model by Brown and Duda
 % An Efficient Hrtf Model For 3-D Sound (1997)
 % by C. Phillip Brown , Richard O. Duda
 %% ~~~~~~~~~~~~~~~~~~~~~~ -*- Head Shadow -*- ~~~~~~~~~~~~~~~~~~~~~~~~~~ %%
+% Head shadow + Pinna Model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 classdef myHeadShadow < audioPlugin
     properties
