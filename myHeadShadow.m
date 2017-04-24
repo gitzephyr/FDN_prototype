@@ -84,7 +84,7 @@ classdef myHeadShadow < audioPlugin
             % -- Head Shadow model
             % --- write indexes
             writeIndexL = plugin.bufferIndexL;
-            writeIndexR = plugin.bufferIndexL;
+            writeIndexR = plugin.bufferIndexR;
             % --- read indexes
             readIndexL = writeIndexL - plugin.NSamplesL;
             readIndexR = writeIndexR - plugin.NSamplesR;
