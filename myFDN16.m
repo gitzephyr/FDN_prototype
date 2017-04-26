@@ -2,13 +2,13 @@
 % Author            : Matteo Girardi
 % Created on        : Fri Mar 19 14:30:18 CET 2017
 % Last Modified by  : Matteo Girardi (girardi.matthew@gmail.com)
-% Last Modified on  : Wed Apr 12 23:03:05 CEST 2017
+% Last Modified on  : Wed Apr 26 23:57:09 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~ -*- Feedback Delay Network -*- ~~~~~~~~~~~~~~~~~~~~~~ %%
 % Real-time implementation of FDN
 % you need the Audio System Toolbox!! 
 % 
-% 16 Delay + LOWPASS Filter
+% 16 Delay lines + LOWPASS Filter
 % based on: 
 % - Physical Audio Signal Processing
 %   for Virtual Musical Instruments and Audio Effects
@@ -76,11 +76,11 @@ classdef myFDN16 < audioPlugin
         PluginInterface = audioPluginInterface(...
             audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
             audioPluginParameter('cM','DisplayName','Wet','Label','%','Mapping',{'lin',0,1}),...
-            audioPluginParameter('kERefl','DisplayName','Pre-delay','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('kERefl','DisplayName','Pre-reverb','Label','%','Mapping',{'lin',0,1}),...
             audioPluginParameter('Dampening','DisplayName','Dampening','Label','%','Mapping',{'lin',0,0.5}),...
-            audioPluginParameter('B0','DisplayName','LowPass Filter','Mapping',{'lin',0,1}),...
-            audioPluginParameter('pathmin','DisplayName','Min Room Size','Label','meters','Mapping',{'int',1,50}),...
-            audioPluginParameter('pathmax','DisplayName','Max Room Size','Label','meters','Mapping',{'int',1,50}));
+            audioPluginParameter('B0','DisplayName','Lowpass','Mapping',{'lin',0,1}),...
+            audioPluginParameter('pathmax','DisplayName','Room Size','Label','meters','Mapping',{'int',5,50}));
+            % audioPluginParameter('pathmin','DisplayName','Min Room Size','Label','meters','Mapping',{'int',1,50}),...
     end
     methods
         %------------------------------------------------------------------
@@ -503,32 +503,50 @@ classdef myFDN16 < audioPlugin
             plugin.BufferTapIndex = writeTap;
         end
         %------------------------------------------------------------------
-        function set.pathmin(plugin, val)
-            fs = getSampleRate(plugin);
-            Np = 16;
-            i = [1:Np];
-            % Approximate desired delay-line lengths using powers of distinct primes:
-            % c = 343; % soundspeed in m/s at 20 degrees C for dry air
-            plugin.pathmin = val;
-            plugin.dmin = fs*val/plugin.c;
-            dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
-            ppwr = floor(log(dl)./log(plugin.prime(i))); % best prime power
-            plugin.NSamples = plugin.prime(i).^ppwr; % each delay a power of a distinct prime
-            plugin.NSamples
-        end
+%         function set.pathmin(plugin, val)
+%             fs = getSampleRate(plugin);
+%             Np = 16;
+%             i = [1:Np];
+%             % Approximate desired delay-line lengths using powers of distinct primes:
+%             % c = 343; % soundspeed in m/s at 20 degrees C for dry air
+%             plugin.pathmin = val;
+%             plugin.dmin = fs*val/plugin.c;
+%             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1)); % desired delay in samples
+%             ppwr = floor(log(dl)./log(plugin.prime(i))); % best prime power
+%             plugin.NSamples = plugin.prime(i).^ppwr; % each delay a power of a distinct prime
+%             plugin.NSamples
+%         end
         %------------------------------------------------------------------
         function set.pathmax(plugin, val)
             Np = 16;
             i = [1:Np];
             plugin.pathmax = val;
+            plugin.dmin = getSampleRate(plugin)*5/plugin.c;
             plugin.dmax = getSampleRate(plugin)*val/plugin.c;
             dl = plugin.dmin * (plugin.dmax/plugin.dmin).^(i/(Np-1));
             ppwr = floor(0.5 + log(dl)./log(plugin.prime(i)));
             plugin.NSamples = plugin.prime(i).^ppwr;
-            plugin.NSamples
         end
         function reset(plugin)
-            
+            plugin.z1 = zeros(192001,2);
+            plugin.z2 = zeros(192001,2); 
+            plugin.z3 = zeros(192001,2); 
+            plugin.z4 = zeros(192001,2); 
+            plugin.z5 = zeros(192001,2); 
+            plugin.z6 = zeros(192001,2); 
+            plugin.z7 = zeros(192001,2); 
+            plugin.z8 = zeros(192001,2); 
+            plugin.z9 = zeros(192001,2); 
+            plugin.z10 = zeros(192001,2); 
+            plugin.z11 = zeros(192001,2); 
+            plugin.z12 = zeros(192001,2); 
+            plugin.z13 = zeros(192001,2); 
+            plugin.z14 = zeros(192001,2); 
+            plugin.z15 = zeros(192001,2); 
+            plugin.z16 = zeros(192001,2); 
+            plugin.tapDel = zeros(44100,2);
+            plugin.NSamples = [512 729 625 343 1331 2197 289 361 529 841 961 1369 1681 1849 2209 2809];
+            plugin.TSamples = [432 464 476 570 635 683 747 802 867 922 995 1048 1148 1170 1181 1192];
         end
     end
 end

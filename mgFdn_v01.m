@@ -2,7 +2,7 @@
 % Author            : Matteo Girardi
 % Created on        : Sun Apr 23 17:54:58 CEST 2017
 % Last Modified by  : Matteo Girardi (girardi dot matthew at gmail.com)
-% Last Modified on  : Mon Apr 24 22:27:37 CEST 2017
+% Last Modified on  : Wed Apr 26 23:57:21 CEST 2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ~~~~~~~~~~~~~~~~~~~~~~~~~ -*- mgFdn -*- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,7 +63,7 @@ classdef mgFdn_v01 < audioPlugin
         % 
         beta = (2*343)/0.0931;
         theta = 0;
-        distance = 4;
+        % distance = 4;
     end
     properties (Access = private)
         % TDL
@@ -112,16 +112,15 @@ classdef mgFdn_v01 < audioPlugin
     end
     properties (Constant)
         PluginInterface = audioPluginInterface(...
-            audioPluginParameter('theta','DisplayName','theta','Label','Degree','Mapping',{'lin',-90,90}),...
+            audioPluginParameter('theta','DisplayName','Angle','Label','Degree','Mapping',{'lin',-90,90}),...
             audioPluginParameter('Gain','DisplayName','Dry','Label','%','Mapping',{'lin',0,1}),...
             audioPluginParameter('C','DisplayName','Wet','Label','%','Mapping',{'lin',0,1}),...
-            audioPluginParameter('distance','DisplayName','Distance','Mapping',{'lin',2,150}),...
-            audioPluginParameter('kEarly','DisplayName','Pre-delay','Label','%','Mapping',{'lin',0,1}),...
+            audioPluginParameter('kEarly','DisplayName','Pre-reverb','Label','%','Mapping',{'lin',0,1}),...
             audioPluginParameter('Dampening','DisplayName','Dampening','Label','%','Mapping',{'lin',0,0.5}),...
-            audioPluginParameter('B0','DisplayName','LowPass Filter','Mapping',{'lin',0,1}),...
+            audioPluginParameter('B0','DisplayName','Lowpass','Mapping',{'lin',0,1}),...
             audioPluginParameter('pathmax','DisplayName','Room Size','Label','meters','Mapping',{'int',1,50}));
         % audioPluginParameter('pathmin','DisplayName','Min Room Size','Label','meters','Mapping',{'int',1,50}),...
-        % 
+        % audioPluginParameter('distance','DisplayName','Distance','Mapping',{'lin',2,150}),...
     end
     methods
         function out = process(plugin, in)
@@ -327,10 +326,12 @@ classdef mgFdn_v01 < audioPlugin
                               + CC(15)*plugin.lpfPrev(15) + CC(16)*plugin.lpfPrev(16);
                 % ---------------------------------------------------------
                 % -- write to circular buffer
-                % plugin.tdl(wIndexTap,:) = in(i,:) * plugin.Gain;
-                plugin.tdl(wIndexTap,:) = in(i,:) * (2/plugin.distance);
-                plugin.bufferL(wIndexL) = in(i,1) * (2/plugin.distance) + tdl_out(1,1);
-                plugin.bufferR(wIndexR) = in(i,2) * (2/plugin.distance) + tdl_out(1,2);
+                plugin.tdl(wIndexTap,:) = in(i,:) * plugin.Gain;
+                plugin.bufferL(wIndexL) = in(i,1) * plugin.Gain + tdl_out(1,1);
+                plugin.bufferR(wIndexR) = in(i,2) * plugin.Gain + tdl_out(1,2);
+                % plugin.tdl(wIndexTap,:) = in(i,:) * (2/plugin.distance);
+                % plugin.bufferL(wIndexL) = in(i,1) * (2/plugin.distance) + tdl_out(1,1);
+                % plugin.bufferR(wIndexR) = in(i,2) * (2/plugin.distance) + tdl_out(1,2);
                 
                 plugin.z1(wIndex,:) = plugin.tdl(rIndexTDL_1,:)*BB(1) + temp*A(1,:)';
                 plugin.z2(wIndex,:) = plugin.tdl(rIndexTDL_2,:)*BB(2) + temp*A(2,:)';
