@@ -350,6 +350,19 @@ classdef myHeadShadow < audioPlugin
             % -- Head Shadow 
             plugin.NSamplesL = floor((plugin.a-plugin.a*sin(plugin.thetaRad)/343)*getSampleRate(plugin));
             plugin.NSamplesR = floor((plugin.a+plugin.a*(plugin.thetaRad)/343)*getSampleRate(plugin));
+            
+%             ptr = 'L-------------------------------------------------------'
+%             plugin.NSamplesPM1L
+%             plugin.NSamplesPM2L
+%             plugin.NSamplesPM3L
+%             plugin.NSamplesPM4L
+%             plugin.NSamplesPM5L
+%             ptr = 'R-------------------------------------------------------'
+%             plugin.NSamplesPM1R
+%             plugin.NSamplesPM2R
+%             plugin.NSamplesPM3R
+%             plugin.NSamplesPM4R
+%             plugin.NSamplesPM5R
         end
     end
 end
