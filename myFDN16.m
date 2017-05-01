@@ -545,8 +545,6 @@ classdef myFDN16 < audioPlugin
             plugin.z15 = zeros(192001,2); 
             plugin.z16 = zeros(192001,2); 
             plugin.tapDel = zeros(44100,2);
-            plugin.NSamples = [512 729 625 343 1331 2197 289 361 529 841 961 1369 1681 1849 2209 2809];
-            plugin.TSamples = [432 464 476 570 635 683 747 802 867 922 995 1048 1148 1170 1181 1192];
         end
     end
 end
