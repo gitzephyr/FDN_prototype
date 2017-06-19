@@ -106,7 +106,7 @@ y = filter(B,A,x);   % Matlab and Octave compatible
 %% efr.m - frequency response computation in Matlab/Octave
 clear all; close all; clc;
 % Example filter:
-g1 = 0.5^3; B = [1 0 0 g1];      % Feedforward coeffs
+g1 = 0.5^3; B = [1 0 0 0];      % Feedforward coeffs
 g2 = 0.9^5; A = [1 0 0 0 0 g2];  % Feedback coefficients
 
 Nfft = 1024;         % FFT size
@@ -116,6 +116,31 @@ Xnum = fft(B,Nfft);  % Frequency response of FIR part
 Xden = fft(A,Nfft);  % Frequency response, feedback part
 X = Xnum ./ Xden;    % Should check for divide by zero!
 freqz(B,A,Nspec)
+%% 
+r = [0.995 0.9 0.5 0.1];
+L = 16;
+b = [1 zeros(1,L-1) -r(1)];
+a = [1 zeros(1,L-1)]; 
+freqz(a,b);
+hold on
+
+b = [1 zeros(1,L-1) -r(2)];
+a = [1 zeros(1,L-1)]; 
+freqz(a,b);
+hold on
+
+b = [1 zeros(1,L-1) -r(3)];
+a = [1 zeros(1,L-1)]; 
+freqz(a,b);
+hold on
+
+b = [1 zeros(1,L-1) -r(4)];
+a = [1 zeros(1,L-1)]; 
+freqz(a,b);
+hold on
+legend(num2str(r))
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Allpass filter
 % y(n) = b0*x(n)+x(n-M)-aM*y(n-M)

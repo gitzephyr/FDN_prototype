@@ -24,6 +24,9 @@ classdef myLPF < audioPlugin
                 tmp = plugin.g*in(i,:) + (1-plugin.g)*plugin.yLast;
                 out(i,:) = tmp;
                 plugin.yLast = tmp;
+%                 tmp = plugin.g*in(i,:) - (1-plugin.g)*plugin.yLast;
+%                 out(i,:) = tmp;
+%                 plugin.yLast = in(i,:);
             end
         end
     end
